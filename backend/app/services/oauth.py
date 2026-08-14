@@ -72,12 +72,12 @@ def exchange_code(code: str, code_verifier: str, redirect_uri: str) -> dict:
 def verify_id_token(id_token: str) -> dict:
     """Verify the Google ID token and return its claims."""
     settings = get_settings()
-    with httpx.Client(timeout=15) as client:
-        jwks = client.get(JWKS_URL).json()
+    jwks_client = jwt.PyJWKClient(JWKS_URL, timeout=15)
     try:
+        signing_key = jwks_client.get_signing_key_from_jwt(id_token).key
         claims = jwt.decode(
             id_token,
-            jwt.PyJWKClient(jwks).get_signing_key_from_jwt(id_token).key,
+            signing_key,
             algorithms=["RS256"],
             audience=settings.google_client_id,
             options={"verify_exp": True},
