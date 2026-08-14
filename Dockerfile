@@ -4,11 +4,12 @@
 
 # ---------- 1. Build the Next.js standalone bundle ----------
 FROM node:22-alpine AS web-build
+RUN corepack enable && corepack prepare pnpm@11.21.0 --activate
 WORKDIR /build
-COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
+COPY frontend/package.json frontend/pnpm-lock.yaml frontend/pnpm-workspace.yaml ./
+RUN pnpm install --frozen-lockfile
 COPY frontend/ .
-RUN npm run build
+RUN pnpm run build
 
 # ---------- 2. Runtime: Node (Next standalone) + Python (FastAPI) ----------
 FROM node:22-bookworm-slim AS runtime
