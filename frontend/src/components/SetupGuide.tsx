@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import { guideUnlocks } from '@/state/reducer';
 import type { GuideStatus } from '@/state/types';
 import { useApp } from '@/components/App';
+import { BankFields, ProjectFields, SourceFields, type SaveHandle } from '@/components/forms';
 
 /**
  * 3-step setup guide (ticket 10). An overlay over any open screen — never a
@@ -68,7 +69,13 @@ export function SetupGuide({ open, onClose }: { open: boolean; onClose: () => vo
 
         <div className="guide-actions">
           <button className="btn ghost" onClick={() => persist('skipped')}>{t('guide.skip')}</button>
-          {step >= 1 && <button className="btn primary" onClick={() => persist('done')}>{t('guide.finish')}</button>}
+          {/* One solid-accent primary per step: the primary action on each step
+              lives in its body; Finish is the single primary only on the last step. */}
+          {step >= 1 && (
+            <button className={step === 2 ? 'btn primary' : 'btn'} onClick={() => persist('done')}>
+              {t('guide.finish')}
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -77,167 +84,47 @@ export function SetupGuide({ open, onClose }: { open: boolean; onClose: () => vo
 
 function BankStep({ onAdvance }: { onAdvance: () => void }) {
   const { t } = useI18n();
-  const { state, dispatch } = useApp();
-  const bank = state.bank;
-  const [fee, setFee] = useState(String(bank?.fixedFee ?? 320));
-  const [pct, setPct] = useState(String(bank?.convPct ?? 0));
-  const [tax, setTax] = useState(String(bank?.taxPct ?? 0));
-  const [err, setErr] = useState('');
-
-  const save = async () => {
-    setErr('');
-    try {
-      const saved = await api.saveBank({ fixedFee: Number(fee) || 0, convPct: Number(pct) || 0, taxPct: Number(tax) || 0 });
-      dispatch({ type: 'SAVE_BANK', bank: { ...saved }, firstTime: bank === null });
-      onAdvance();
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
-    }
-  };
+  const { state } = useApp();
+  const ref = useRef<SaveHandle>(null);
 
   return (
     <>
-      <div className="field">
-        <label>{t('settings.currency')}</label>
-        <input type="text" value={bank?.currency ?? 'MXN'} disabled />
-        <div className="hint">{t('settings.currency.fixed')}</div>
-      </div>
-      <div className="field">
-        <label>{t('settings.fee')}</label>
-        <input type="number" step="any" value={fee} onChange={(e) => setFee(e.target.value)} />
-        <div className="hint">{t('settings.fee.hint')}</div>
-      </div>
-      <div className="field">
-        <label>{t('settings.pct')}</label>
-        <input type="number" step="any" value={pct} onChange={(e) => setPct(e.target.value)} />
-      </div>
-      <div className="field">
-        <label>{t('settings.tax')}</label>
-        <input type="number" step="any" value={tax} onChange={(e) => setTax(e.target.value)} />
-      </div>
-      {err && <div className="error">{err}</div>}
-      <button className="btn primary" onClick={save}>{t('guide.add.income')}</button>
+      <BankFields ref={ref} initial={state.bank} />
+      <button className="btn primary" onClick={async () => { if (await ref.current?.save()) onAdvance(); }}>
+        {t('guide.add.income')}
+      </button>
     </>
   );
 }
 
 function SourceStep({ onAdvance }: { onAdvance: () => void }) {
   const { t } = useI18n();
-  const { dispatch } = useApp();
-  const [name, setName] = useState('');
-  const [currency, setCurrency] = useState('USD');
-  const [salary, setSalary] = useState('0');
-  const [mode, setMode] = useState<'none' | 'pct' | 'flat'>('none');
-  const [value, setValue] = useState('0');
-  const [err, setErr] = useState('');
-
-  const save = async () => {
-    setErr('');
-    try {
-      const created = await api.createSource({
-        name: name.trim(),
-        currency: currency.trim().toUpperCase(),
-        fixedSalary: Number(salary) || 0,
-        commissionMode: mode,
-        commissionValue: mode === 'none' ? 0 : Number(value) || 0,
-      });
-      dispatch({ type: 'ADD_SOURCE', source: created });
-      onAdvance();
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
-    }
-  };
+  const ref = useRef<SaveHandle>(null);
 
   return (
     <>
-      <div className="field">
-        <label>{t('sources.name')}</label>
-        <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
-      </div>
-      <div className="field">
-        <label>{t('sources.currency')}</label>
-        <input type="text" value={currency} onChange={(e) => setCurrency(e.target.value)} />
-      </div>
-      <div className="field">
-        <label>{t('sources.salary')}</label>
-        <input type="number" step="any" value={salary} onChange={(e) => setSalary(e.target.value)} placeholder={t('sources.salary.placeholder')} />
-      </div>
-      <div className="field">
-        <label>{t('sources.comm.mode')}</label>
-        <select value={mode} onChange={(e) => setMode(e.target.value as 'none' | 'pct' | 'flat')}>
-          <option value="none">{t('sources.comm.none')}</option>
-          <option value="pct">{t('sources.comm.pct')}</option>
-          <option value="flat">{t('sources.comm.flat')}</option>
-        </select>
-      </div>
-      {mode !== 'none' && (
-        <div className="field">
-          <label>{mode === 'pct' ? t('sources.comm.value.pct') : t('sources.comm.value.flat')}</label>
-          <input type="number" step="any" value={value} onChange={(e) => setValue(e.target.value)} />
-        </div>
-      )}
-      {err && <div className="error">{err}</div>}
-      <button className="btn primary" onClick={save}>{t('guide.add.project')}</button>
+      <SourceFields ref={ref} />
+      <button className="btn primary" onClick={async () => { if (await ref.current?.save()) onAdvance(); }}>
+        {t('guide.add.project')}
+      </button>
     </>
   );
 }
 
 function ProjectStep() {
   const { t } = useI18n();
-  const { state, dispatch } = useApp();
+  const { state } = useApp();
+  const ref = useRef<SaveHandle>(null);
   const source = state.sources[0];
-  const [name, setName] = useState('');
-  const [value, setValue] = useState('');
-  const [assigned, setAssigned] = useState(new Date().toISOString().slice(0, 10));
-  const [end, setEnd] = useState(addWeeks(new Date().toISOString().slice(0, 10), 6));
-  const [err, setErr] = useState('');
 
   if (!source) {
     return <p className="meta">{t('sources.empty.sub')}</p>;
   }
 
-  const save = async () => {
-    setErr('');
-    try {
-      const created = await api.createProject(source.id, {
-        name: name.trim() || 'Project',
-        value: Number(value) || 0,
-        assigned,
-        estEnd: end,
-        approval: null,
-      });
-      dispatch({ type: 'ADD_PROJECT', project: created });
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : String(e));
-    }
-  };
-
   return (
     <>
-      <div className="field">
-        <label>{t('proj.name')}</label>
-        <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Website redesign" />
-      </div>
-      <div className="field">
-        <label>{t('proj.value')} ({source.currency})</label>
-        <input type="number" step="any" value={value} onChange={(e) => setValue(e.target.value)} />
-      </div>
-      <div className="field">
-        <label>{t('proj.assigned')}</label>
-        <input type="date" value={assigned} onChange={(e) => setAssigned(e.target.value)} />
-      </div>
-      <div className="field">
-        <label>{t('proj.end')}</label>
-        <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
-      </div>
-      {err && <div className="error">{err}</div>}
-      <button className="btn" onClick={save}>{t('guide.add.project')}</button>
+      <ProjectFields ref={ref} source={source} />
+      <button className="btn" onClick={() => ref.current?.save()}>{t('guide.add.project')}</button>
     </>
   );
-}
-
-function addWeeks(iso: string, weeks: number): string {
-  const d = new Date(`${iso}T00:00:00`);
-  d.setDate(d.getDate() + weeks * 7);
-  return d.toISOString().slice(0, 10);
 }

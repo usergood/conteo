@@ -10,6 +10,7 @@ import { SetupGuide } from '@/components/SetupGuide';
 vi.mock('@/lib/api', () => ({
   api: {
     saveGuideStatus: vi.fn().mockResolvedValue({ guideStatus: 'done' }),
+    settingsSeed: vi.fn().mockResolvedValue({ currency: 'MXN', fixedFee: 320, convPct: 3, taxPct: 2 }),
     saveBank: vi.fn().mockResolvedValue({ currency: 'MXN', fixedFee: 320, convPct: 3, taxPct: 2 }),
     createSource: vi.fn().mockResolvedValue({ id: 's1', name: 'US company', currency: 'USD', fixedSalary: 0, commissionMode: 'none', commissionValue: 0, active: true }),
     createProject: vi.fn().mockResolvedValue({ id: 'p1', sourceId: 's1', name: 'Website', value: 1000, assigned: '2026-08-01', estEnd: '2026-09-12', approval: null, settledMonth: null }),
