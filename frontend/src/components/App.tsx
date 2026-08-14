@@ -13,6 +13,7 @@ import { CloseScreen } from '@/components/screens/Close';
 import { ForecastScreen } from '@/components/screens/Forecast';
 import { MonthsScreen } from '@/components/screens/Months';
 import { ShareScreen } from '@/components/screens/Share';
+import { PalettePrototypeSwitcher } from '@/components/prototype/PalettePrototypeSwitcher';
 
 interface AppContextValue {
   state: AppState;
@@ -30,7 +31,14 @@ export const AppContext = createContext<AppContextValue>({
 
 export const useApp = () => useContext(AppContext);
 
-const NAV: Screen[] = ['forecast', 'sources', 'close', 'months', 'share', 'settings'];
+const NAV: { screen: Screen; icon: string }[] = [
+  { screen: 'forecast', icon: '📈' },
+  { screen: 'sources', icon: '🏢' },
+  { screen: 'close', icon: '💰' },
+  { screen: 'months', icon: '🗓️' },
+  { screen: 'share', icon: '🔗' },
+  { screen: 'settings', icon: '⚙️' },
+];
 
 const LANG_SYMBOL: Record<string, string> = { en: '🇬🇧', es: '🇪🇸' };
 
@@ -101,39 +109,44 @@ export function App() {
           </div>
           <span className="spacer" />
           {notice && <span className="meta">{notice}</span>}
+          <button className="iconbtn" onClick={cycleTheme}>{theme === 'dark' ? '☀️' : '🌙'}</button>
           {state.user && (
             <>
               <button className="iconbtn" onClick={toggleLang}>{LANG_SYMBOL[tValue.lang] ?? tValue.lang.toUpperCase()}</button>
-              <button className="iconbtn" onClick={cycleTheme}>{theme === 'dark' ? '☀️' : '🌙'}</button>
               <button className="iconbtn" onClick={logout}>{tValue.t('common.logout')}</button>
             </>
           )}
         </header>
 
-        {screen !== 'login' && (
-          <nav className="nav">
-            {NAV.map((s) => (
-              <button
-                key={s}
-                className={screen === s ? 'active' : ''}
-                disabled={locked && s !== 'settings'}
-                onClick={() => dispatch({ type: 'SET_SCREEN', screen: s })}
-              >
-                {tValue.t(s)}
-              </button>
-            ))}
-          </nav>
-        )}
+        <div className="page-shell">
+          {screen !== 'login' && (
+            <nav className="nav">
+              {NAV.map(({ screen: s, icon }) => (
+                <button
+                  key={s}
+                  className={screen === s ? 'active' : ''}
+                  disabled={locked && s !== 'settings'}
+                  onClick={() => dispatch({ type: 'SET_SCREEN', screen: s })}
+                >
+                  <span className="nav-ico">{icon}</span>
+                  <span className="nav-label">{tValue.t(s)}</span>
+                </button>
+              ))}
+            </nav>
+          )}
 
-        <main className="app">
-          {screen === 'login' && <LoginScreen />}
-          {screen === 'settings' && <SettingsScreen />}
-          {screen === 'sources' && <SourcesScreen />}
-          {screen === 'close' && <CloseScreen />}
-          {screen === 'forecast' && <ForecastScreen />}
-          {screen === 'months' && <MonthsScreen />}
-          {screen === 'share' && <ShareScreen />}
-        </main>
+          <main className="app">
+            {screen === 'login' && <LoginScreen />}
+            {screen === 'settings' && <SettingsScreen />}
+            {screen === 'sources' && <SourcesScreen />}
+            {screen === 'close' && <CloseScreen />}
+            {screen === 'forecast' && <ForecastScreen />}
+            {screen === 'months' && <MonthsScreen />}
+            {screen === 'share' && <ShareScreen />}
+          </main>
+        </div>
+
+        <PalettePrototypeSwitcher />
       </I18nContext.Provider>
     </AppContext.Provider>
   );
