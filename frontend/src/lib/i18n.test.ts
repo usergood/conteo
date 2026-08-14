@@ -2,19 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { LANGUAGES, resolveLanguage, isLanguage, type Language } from './i18n';
 
 describe('LANGUAGES (ticket 8)', () => {
-  it('is a single extensible array with code/name/flag', () => {
+  it('is a single extensible array with code/name', () => {
     expect(LANGUAGES.map((l) => l.code)).toEqual(['en', 'es']);
     for (const l of LANGUAGES) {
       expect(l.code).toBeTruthy();
       expect(l.name).toBeTruthy();
-      expect(l.flag).toBeTruthy();
     }
-  });
-
-  it('English carries the GB flag (GB never surfaces as text)', () => {
-    const en = LANGUAGES.find((l) => l.code === 'en')!;
-    expect(en.flag).toBe('🇬🇧');
-    expect(en.name).toBe('English');
   });
 
   it('derives the Language type from the array', () => {

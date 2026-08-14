@@ -6,18 +6,21 @@ import { LANGUAGES } from '@/lib/i18n';
 afterEach(cleanup);
 
 describe('LanguageSelector (ticket 8)', () => {
-  it('shows flag + code for the current language on the trigger', () => {
+  it('shows an SVG flag + code for the current language on the trigger', () => {
     render(<LanguageSelector lang="en" onChange={() => {}} />);
-    expect(screen.getByRole('button', { name: 'English' })).toHaveTextContent('🇬🇧 EN');
+    const trigger = screen.getByRole('button', { name: 'English' });
+    expect(trigger).toHaveTextContent('EN');
+    expect(trigger.querySelector('svg.langsel-flag')).not.toBeNull();
   });
 
-  it('lists flag + code for every available language, with name backing aria-label', () => {
+  it('lists an SVG flag + code for every available language, with name backing aria-label', () => {
     render(<LanguageSelector lang="en" onChange={() => {}} />);
     fireEvent.click(screen.getByRole('button', { name: 'English' }));
     const menu = within(screen.getByRole('listbox'));
     for (const l of LANGUAGES) {
       const row = menu.getByRole('button', { name: l.name });
-      expect(row).toHaveTextContent(`${l.flag} ${l.code.toUpperCase()}`);
+      expect(row).toHaveTextContent(l.code.toUpperCase());
+      expect(row.querySelector('svg.langsel-flag')).not.toBeNull();
     }
   });
 

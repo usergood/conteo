@@ -3,11 +3,12 @@ import { createContext, useContext } from 'react';
 /*
  * Single source of truth for available languages (ticket 8). `Language` is
  * derived from it; adding a third language is a one-line change here. The
- * dropdown renders `flag + code`; `name` backs aria-label/title.
+ * dropdown renders `flag + code`; `name` backs aria-label/title. Flag icons
+ * are real SVGs from FlagIcon (emoji flags don't render on Windows).
  */
 export const LANGUAGES = [
-  { code: 'en', name: 'English', flag: '🇬🇧' },
-  { code: 'es', name: 'Español', flag: '🇪🇸' },
+  { code: 'en', name: 'English' },
+  { code: 'es', name: 'Español' },
 ] as const;
 
 export type Language = (typeof LANGUAGES)[number]['code'];

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { LANGUAGES, type Language } from '@/lib/i18n';
+import { FlagIcon } from '@/components/FlagIcon';
 
 /**
  * Custom language dropdown (ticket 8): shows `flag + code` for every available
@@ -30,7 +31,7 @@ export function LanguageSelector({ lang, onChange }: { lang: Language; onChange:
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
       >
-        {current.flag} {current.code.toUpperCase()}
+        <FlagIcon code={current.code} /> {current.code.toUpperCase()}
       </button>
       {open && (
         <ul className="langsel-menu" role="listbox" aria-label="Language">
@@ -45,7 +46,7 @@ export function LanguageSelector({ lang, onChange }: { lang: Language; onChange:
                   setOpen(false);
                 }}
               >
-                {l.flag} {l.code.toUpperCase()}
+                <FlagIcon code={l.code} /> {l.code.toUpperCase()}
               </button>
             </li>
           ))}
