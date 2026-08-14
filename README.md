@@ -1,6 +1,6 @@
-# Salary Tracker & Forecaster
+# Conteo
 
-A self-hosted multi-user personal-finance app for contractors in Mexico: tracks income sources (fixed salary + linked projects, each in its own currency), forecasts future months with live FX to MXN, settles each month against the exact amount that lands in the bank, and produces PDF salary slips.
+A self-hosted multi-user income tracker for an IT consultant with customers or employers in different countries: track each income source (fixed salary + linked projects, each in its own currency), forecast expected income with live FX, record the final income that lands in the bank each month, and produce PDF salary slips — all the data you need when doing taxes.
 
 - **Stack**: Python FastAPI backend, Next.js/React frontend, SQLite storage, Docker.
 - **Auth**: Google Sign-In only (dev-login bypass available for testing).
@@ -19,7 +19,7 @@ Internet → Cloudflare Tunnel → 127.0.0.1:3000 (container web port)
 
 The container mounts one host directory at `/data`:
 
-- `salary.db` — SQLite database
+- `conteo.db` — SQLite database
 - `config.yaml` — non-secret defaults (currency MXN, 2% tax, 320 MXN bank fee) that seed the account-creation form
 
 ## Pre-provisioning (one-time)
@@ -28,22 +28,22 @@ These steps are done by you, on your own accounts; nothing in the app can do the
 
 ### 1. Create the Cloudflare Tunnel
 
-Create a named tunnel for `salary.glappet.eu` and get its credentials token. cloudflared runs on the host (see below) and points at the app's web port.
+Create a named tunnel for `conteo.glappet.eu` and get its credentials token. cloudflared runs on the host (see below) and points at the app's web port.
 
 ### 2. DNS
 
 Add a proxied CNAME on your zone:
 
 ```
-salary.glappet.eu  CNAME  <tunnel-uuid>.cfargotunnel.com  (proxied)
+conteo.glappet.eu  CNAME  <tunnel-uuid>.cfargotunnel.com  (proxied)
 ```
 
 ### 3. Google OAuth client
 
 Create an OAuth client at <https://console.cloud.google.com/apis/credentials>:
 
-- Authorized JavaScript origin: `https://salary.glappet.eu`
-- Redirect URI: `https://salary.glappet.eu/api/auth/callback`
+- Authorized JavaScript origin: `https://conteo.glappet.eu`
+- Redirect URI: `https://conteo.glappet.eu/api/auth/callback`
 
 Take note of the Client ID and Client Secret.
 
@@ -52,8 +52,8 @@ Take note of the Client ID and Client Secret.
 Create the data directory on the host and pre-seed `config.yaml`:
 
 ```bash
-mkdir -p ~/salary-tracker
-cat > ~/salary-tracker/config.yaml <<'EOF'
+mkdir -p ~/conteo
+cat > ~/conteo/config.yaml <<'EOF'
 currency: MXN
 tax_percent: 2
 bank_fixed_fee: 320
@@ -66,17 +66,17 @@ EOF
 
 ```bash
 docker run -d \
-  --name salary-tracker \
+  --name conteo \
   --restart unless-stopped \
   -p 127.0.0.1:3000:3000 \
-  -v ~/salary-tracker:/data \
+  -v ~/conteo:/data \
   -e AUTH_MODE=google \
   -e GOOGLE_CLIENT_ID=<client-id> \
   -e GOOGLE_CLIENT_SECRET=<client-secret> \
   -e SESSION_SECRET=<random> \
-  -e APP_BASE_URL=https://salary.glappet.eu \
+  -e APP_BASE_URL=https://conteo.glappet.eu \
   -e WEB_PORT=3000 \
-  salary-tracker:latest
+  conteo:latest
 ```
 
 ### Environment variables
@@ -88,7 +88,7 @@ docker run -d \
 | `GOOGLE_CLIENT_ID` | yes (google) | — | Google OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | yes (google) | — | Google OAuth client secret |
 | `SESSION_SECRET` | yes | — | Secret for signing session cookies |
-| `APP_BASE_URL` | yes | — | Public address, e.g. `https://salary.glappet.eu`; drives redirect URIs / absolute links |
+| `APP_BASE_URL` | yes | — | Public address, e.g. `https://conteo.glappet.eu`; drives redirect URIs / absolute links |
 | `WEB_PORT` | no | `3000` | Host-facing web port (bound to 127.0.0.1) |
 
 Only the web port is published, bound to `127.0.0.1`; FastAPI is never directly reachable. TLS terminates at Cloudflare; the origin is plain HTTP.
@@ -104,7 +104,7 @@ cloudflared tunnel --url http://127.0.0.1:3000
 Or, with a named tunnel and the credentials file from step 1:
 
 ```bash
-cloudflared tunnel --name salary run
+cloudflared tunnel --name conteo run
 ```
 
 ## Dev / test mode
@@ -113,14 +113,14 @@ Before the tunnel and Google OAuth client exist, the app is fully usable with th
 
 ```bash
 docker run -d \
-  --name salary-tracker-dev \
+  --name conteo-dev \
   -p 127.0.0.1:3000:3000 \
-  -v ~/salary-tracker:/data \
+  -v ~/conteo:/data \
   -e AUTH_MODE=dev \
   -e DEV_AUTH_TOKEN=<your-token> \
   -e SESSION_SECRET=<random> \
   -e APP_BASE_URL=http://127.0.0.1:3000 \
-  salary-tracker:latest
+  conteo:latest
 ```
 
 The dev-login screen takes the token plus an email, auto-creates the user if missing, and issues the same session cookie the Google flow would.
@@ -131,4 +131,4 @@ Everything host-specific is an environment variable (see table above); nothing i
 
 ## Backups
 
-Everything that matters lives in `/data` (`salary.db` + `config.yaml`). Back up that directory (e.g. `sqlite3 salary.db .backup` or a plain file copy); the container itself is disposable.
+Everything that matters lives in `/data` (`conteo.db` + `config.yaml`). Back up that directory (e.g. `sqlite3 conteo.db .backup` or a plain file copy); the container itself is disposable.

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 export type Theme = 'light' | 'dark';
 
-const STORAGE_KEY = 'salary-tracker-theme';
+const STORAGE_KEY = 'conteo-theme';
 
 function resolveInitial(): Theme {
   if (typeof window === 'undefined') return 'light';

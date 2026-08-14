@@ -65,7 +65,7 @@ const en: Record<string, string> = {
   'sources.deactivate.done': 'Source deactivated',
   'sources.delete': 'Delete', 'sources.delete.confirm': 'Delete {name}? This only works while it has no settlements or projects.',
   'sources.delete.done': 'Source deleted',
-  'app.title': 'Salary Tracker',
+  'app.title': 'Conteo',
   'common.logout': 'Sign out', 'common.close': 'Close',
 };
 
@@ -132,7 +132,7 @@ const es: Record<string, string> = {
   'sources.deactivate.done': 'Fuente desactivada',
   'sources.delete': 'Eliminar', 'sources.delete.confirm': '¿Eliminar {name}? Solo funciona si no tiene liquidaciones ni proyectos.',
   'sources.delete.done': 'Fuente eliminada',
-  'app.title': 'Salario Tracker',
+  'app.title': 'Conteo',
   'common.logout': 'Cerrar sesión', 'common.close': 'Cerrar',
 };
 

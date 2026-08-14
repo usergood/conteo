@@ -2,8 +2,8 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'Salary Tracker',
-  description: 'Salary tracker and forecaster',
+  title: 'Conteo',
+  description: 'Conteo — multi-currency income tracker and forecaster',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -28,7 +28,7 @@ mxn_per_usd = r.json()["rates"]["MXN"]
 
 ## Failure / fallback behavior
 
-- **Cache aggressively.** Whatever feed is chosen, fetch on a schedule, store the last-good snapshot, and serve conversions from the cache. A salary tracker tolerates a 24h-old rate perfectly well; never hard-fail the app on a fetch error.
+- **Cache aggressively.** Whatever feed is chosen, fetch on a schedule, store the last-good snapshot, and serve conversions from the cache. An income forecaster tolerates a 24h-old rate perfectly well; never hard-fail the app on a fetch error.
 - **Ordered fallback chain:** (1) `open.er-api.com/v6/latest/<base>` → (2) `api.frankfurter.dev/v2/rates?base=<base>&quotes=MXN,SEK` → (3) last cached value, with a `stale` flag surfaced in the response/log so the user knows the rate is old.
 - **Handle the 429 explicitly** on open.er-api.com: back off and fall through to Frankfurter rather than retrying hot; the rate limit window is ~20 minutes.
 - **Watch `time_eol_unix`** in the open.er-api.com payload — the provider sets it before deprecating an endpoint, so alerting on it gives a migration window instead of a surprise outage.

@@ -17,7 +17,7 @@ from .services.months import now_iso
 
 
 def cookie_name() -> str:
-    return "salary_session"
+    return "conteo_session"
 
 
 def create_session(conn: sqlite3.Connection, user_id: str) -> str:

@@ -290,7 +290,7 @@
 <main>
 
   <header class="badge">Prototype — throwaway</header>
-  <h1>Salary Tracker — whole-interface feel v3</h1>
+  <h1>Conteo — whole-interface feel v3</h1>
   <p class="question">
     The whole app as clickable mock-ups — desktop + mobile side by side. v3 adds: real inline-SVG icons, an
     elegant light-purple (light) / dark-blue (dark) palette, <b>edit on income sources</b>, and a new
@@ -454,7 +454,7 @@ const I18N = {
     'share.source': 'Share a source with', 'share.email': 'friend@gmail.com', 'share.send': 'Send share invite',
     'share.byMe': 'Shared by me', 'share.empty': 'Nothing shared yet.', 'share.pending.sub': 'Awaiting their first sign-in.',
     'share.active.sub': 'Read-only view: months, settlements, slips.',
-    'app.title': 'Salary Tracker'
+    'app.title': 'Conteo'
   },
   es: {
     'forecast': 'Pronóstico', 'sources': 'Fuentes', 'close': 'Cierre', 'months': 'Meses cerrados', 'share': 'Compartir', 'settings': 'Ajustes',
@@ -513,7 +513,7 @@ const I18N = {
     'share.source': 'Compartir una fuente con', 'share.email': 'amigo@gmail.com', 'share.send': 'Enviar invitación',
     'share.byMe': 'Compartido por mí', 'share.empty': 'Aún no has compartido nada.', 'share.pending.sub': 'Esperando su primer acceso.',
     'share.active.sub': 'Vista de solo lectura: meses, liquidaciones, recibos.',
-    'app.title': 'Salario Tracker'
+    'app.title': 'Conteo'
   }
 };
 const t = (key, vars) => {
@@ -1161,7 +1161,7 @@ function screenShare(scr) {
    ========================================================================= */
 const THEMES = ['system', 'light', 'dark'];
 function applyTheme() {
-  const saved = localStorage.getItem('salary.theme') || 'system';
+  const saved = localStorage.getItem('conteo.theme') || 'system';
   harness.theme = THEMES.includes(saved) ? saved : 'system';
   const dark = harness.theme === 'dark' || (harness.theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
@@ -1170,7 +1170,7 @@ function applyTheme() {
 }
 function cycleTheme() {
   const next = THEMES[(THEMES.indexOf(harness.theme) + 1) % THEMES.length];
-  localStorage.setItem('salary.theme', next);
+  localStorage.setItem('conteo.theme', next);
   applyTheme();
   render();
 }

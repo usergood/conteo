@@ -44,8 +44,8 @@ async def lifespan(app: FastAPI):
 
 def create_app(db_path: str | None = None, fx_poll: bool = True) -> FastAPI:
     settings = get_settings()
-    app = FastAPI(title="Salary Tracker API", lifespan=lifespan)
-    app.state.db_path = db_path or (settings.data_dir.rstrip("/") + "/salary.db")
+    app = FastAPI(title="Conteo API", lifespan=lifespan)
+    app.state.db_path = db_path or (settings.data_dir.rstrip("/") + "/conteo.db")
     app.state.fx_poll = fx_poll
 
     app.include_router(auth.router)

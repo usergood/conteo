@@ -19,7 +19,7 @@ Lock the authentication model.
 
 ## Comments
 
-- Input from *Pick the deployment + Cloudflare Tunnel shape* (07): exactly one OAuth redirect URI on the public hostname `https://salary.glappet.eu/<path>`; the final path is decided here. `AUTH_MODE=dev` + `DEV_AUTH_TOKEN` give a token+email dev-login (auto-creates the user, same session-cookie path) so the app is testable before Google OAuth exists. First-login onboarding must collect per-user bank settings before adding an income source.
+- Input from *Pick the deployment + Cloudflare Tunnel shape* (07): exactly one OAuth redirect URI on the public hostname `https://conteo.glappet.eu/<path>`; the final path is decided here. `AUTH_MODE=dev` + `DEV_AUTH_TOKEN` give a token+email dev-login (auto-creates the user, same session-cookie path) so the app is testable before Google OAuth exists. First-login onboarding must collect per-user bank settings before adding an income source.
 
 ## Comments
 

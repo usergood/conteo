@@ -1,4 +1,4 @@
--- Salary tracker schema (SQLite).
+-- Conteo schema (SQLite).
 -- owner_user_id FK on every owned row; server-side filtering only (ticket 05).
 
 CREATE TABLE IF NOT EXISTS users (

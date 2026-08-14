@@ -32,7 +32,7 @@ def build_slip_data(month: str, user: dict, bank: dict, sections: list[dict], ge
     year, month_num = (int(p) for p in month.split("-"))
     month_label = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][month_num - 1]
     return {
-        "appName": "Salary Tracker",
+        "appName": "Conteo",
         "monthLabel": f"{month_label} {year}",
         "userName": user["displayName"],
         "userEmail": user["email"],

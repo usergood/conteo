@@ -24,7 +24,7 @@ from ..services.months import now_iso
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
-OAUTH_VERIFIER_COOKIE = "salary_oauth_verifier"
+OAUTH_VERIFIER_COOKIE = "conteo_oauth_verifier"
 
 
 def _set_session_cookie(response: Response, token: str) -> None:

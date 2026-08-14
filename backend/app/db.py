@@ -25,4 +25,4 @@ def init_db(conn: sqlite3.Connection) -> None:
 
 def default_db_path() -> str:
     settings = get_settings()
-    return str(Path(settings.data_dir) / "salary.db")
+    return str(Path(settings.data_dir) / "conteo.db")

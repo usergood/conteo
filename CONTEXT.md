@@ -1,6 +1,6 @@
-# Salary Tracker & Forecaster
+# Conteo
 
-A multi-user personal-finance app for a contractor in Mexico City: tracks income sources (fixed salary + linked projects, each source in its own currency), forecasts future salary months with live FX to MXN, settles months against the exact amount that hits the bank, and produces PDF salary slips.
+A multi-user personal-finance app for an IT consultant with customers or employers in different countries: tracks income sources (fixed salary + linked projects, each source in its own currency), forecasts future income months with live FX to MXN, settles months against the exact amount that hits the bank, and produces PDF salary slips for tax season.
 
 ## Income & Projects
 

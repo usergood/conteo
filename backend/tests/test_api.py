@@ -24,7 +24,7 @@ def test_dev_login_rejects_bad_token(client):
 def test_dev_login_autocreates_user_and_sets_cookie(client):
     r = client.post("/api/auth/dev-login", json={"token": "test-token", "email": "you@example.com"})
     assert r.status_code == 200
-    assert r.cookies.get("salary_session")
+    assert r.cookies.get("conteo_session")
     assert r.json()["user"]["email"] == "you@example.com"
     me = client.get("/api/auth/me")
     assert me.status_code == 200
@@ -289,12 +289,12 @@ def test_google_callback_signs_in_and_sets_session(client, app, monkeypatch):
     monkeypatch.setattr("app.routers.auth.oauth.verify_id_token", _fake_verify)
 
     with TestClient(app, follow_redirects=False) as c:
-        c.cookies.set("salary_oauth_verifier", "the-verifier")
+        c.cookies.set("conteo_oauth_verifier", "the-verifier")
         r = c.get("/api/auth/callback?code=authcode")
         assert r.status_code == 307
         assert r.headers["location"] == "http://127.0.0.1:3000/"
-        assert r.cookies.get("salary_session")
-        assert not r.cookies.get("salary_oauth_verifier")
+        assert r.cookies.get("conteo_session")
+        assert not r.cookies.get("conteo_oauth_verifier")
         # the new session is live
         me = c.get("/api/auth/me")
         assert me.status_code == 200

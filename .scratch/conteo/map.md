@@ -1,15 +1,15 @@
-# Wayfinder map: Salary tracker & forecaster
+# Wayfinder map: Conteo
 
 ## Destination
 
-A complete specification for a multi-user salary tracker & forecaster — enough that later sessions implement it end-to-end: income sources (fixed salary + linked projects, each source in its own currency), live-FX forecasting to MXN, bank-settlement math at month close, read-only sharing between Google users, and PDF salary slips.
+A complete specification for a multi-user income tracker & forecaster — enough that later sessions implement it end-to-end: income sources (fixed salary + linked projects, each source in its own currency), live-FX forecasting to MXN, bank-settlement math at month close, read-only sharing between Google users, and PDF salary slips.
 
 ## Notes
 
 - **Domain**: personal finance for a contractor in Mexico City paid into CitiBancoMex. Fixed salary (2500 USD/mo default) + 8% commission per approved project. Projects: $18k–$80k USD, manual entry, 2–6 weeks, up to 3 concurrent, paid on customer approval.
 - **Skills**: HITL tickets via `/grilling` + `/domain-modeling`. Research tickets via `/research` subagents (AFK).
 - **Stack (user's brief)**: Python FastAPI backend, Next.js/React frontend (mobile-friendly), SQLite storage, Docker with config + db mounted outside the container.
-- **Auth**: Google Sign-In only. **Deploy**: self-hosted behind Cloudflare Tunnel, likely `https://salary.glappet.eu`.
+- **Auth**: Google Sign-In only. **Deploy**: self-hosted behind Cloudflare Tunnel, likely `https://conteo.glappet.eu`.
 - **Currency**: everything reports to MXN. Bank: fixed fee 320 MXN/transfer (default), static % on conversion, both settings. Tax: 2% of bank-net MXN, PDF shows before/after.
 - **Standing preferences**: user types exact MXN that hits the account at month close; app derives the bank's effective rate. Real assigned projects drive the forecast (estimated end = start + 6 weeks, overridable); no assumed pipeline.
 - Refer to tickets **by name**, never by bare number, in narration and in Decisions-so-far.
@@ -23,7 +23,7 @@ A complete specification for a multi-user salary tracker & forecaster — enough
 - [UI foundations: responsive layout, theming, i18n, dev-login gating](issues/11-ui-foundations.md) — **one responsive shell** (desktop sidebar ≥1024px, mobile bottom tab bar, same routes); **dev-login gated by `AUTH_MODE` env** (google → Google button only; dev → token+email form; never rendered in production); **theming via CSS custom properties** + `[data-theme]`, default follows `prefers-color-scheme`, per-device override in `localStorage`; **i18n**: English default stored per-user in DB (`users.language` column), flat key→string dictionaries `en`/`es` (groundwork for more), `Intl` for numbers, MXN still `$` + `MXN`. Prototype 02 rewritten to demonstrate all of it.
 - [Research live FX data sources](issues/08-research-fx-source.md) — Use open.er-api.com (no key, hourly poll; 24h refresh); fallback Frankfurter v2 then cached snapshot.
 - [Research PDF generation for salary slips](issues/09-research-pdf-lib.md) — WeasyPrint + Jinja2 (HTML/CSS templates, Docker-friendly); ReportLab runner-up.
-- [Pick the deployment + Cloudflare Tunnel shape](issues/07-deployment-shape.md) — single container (Next.js standalone + FastAPI + SQLite); one hostname `salary.glappet.eu` → one origin, cloudflared → `127.0.0.1:3000`; `/data` bind mount (db + config.yaml); all host-specific config as env (`AUTH_MODE`, `DEV_AUTH_TOKEN`, `APP_BASE_URL`, …) for open-source portability; dev-token auth bypass (token + email, auto-create); per-user bank settings in DB at account creation; self-setup guide written at implementation.
+- [Pick the deployment + Cloudflare Tunnel shape](issues/07-deployment-shape.md) — single container (Next.js standalone + FastAPI + SQLite); one hostname `conteo.glappet.eu` → one origin, cloudflared → `127.0.0.1:3000`; `/data` bind mount (db + config.yaml); all host-specific config as env (`AUTH_MODE`, `DEV_AUTH_TOKEN`, `APP_BASE_URL`, …) for open-source portability; dev-token auth bypass (token + email, auto-create); per-user bank settings in DB at account creation; self-setup guide written at implementation.
 - [Lock the Google-only auth model](issues/05-google-auth-model.md) — Google `sub` as PK; backend OAuth PKCE (scopes openid/email/profile); refresh token in SQLite; server-side `sessions` table (one per device) with ~30-day sliding cookie, silent renewal; sign-out revokes Google token; empty state at first login; `owner_user_id` FK scoping; sharing (06) = Google email, redirect URI = tunnel domain.
 - [Design read-only sharing between users](issues/06-readonly-sharing.md) — share grants one income source (months, settlements, slips) read-only; share by Google email, pending until first sign-in; status ledger never deleted — `pending`/`active`/`dismissed`/`rejected`, receiver sees data only while `active`; one row per (owner, sharee, source); owner-only, no onward sharing; sharee can dismiss, un-dismiss unless rejected; rejected vanishes from sharee's list; "shared by me"/"shared with me" lists show status + last change; shared rows never copied (server-side read filter), mutations reject shared rows; source delete cascade-deletes shares, deactivate keeps them; PDF slips only, no CSV.
 - [Model income sources, projects & currency inheritance](issues/02-model-income-sources.md) — Income Source carries name, mutable currency, optional fixed salary, a commission mode (% of value or flat per project); Project inherits its source's currency, commission lands by approval date; Salary Month closes **per source** (settlement per source per month), fully closed only when every active source is closed; glossary published to `CONTEXT.md`. Unblocks 03 and 04.
@@ -42,5 +42,5 @@ A complete specification for a multi-user salary tracker & forecaster — enough
 <!-- work ruled beyond the destination; closed, never graduates -->
 
 - **The build itself** — destination is the spec; implementation is later sessions.
-- **Cloudflare Tunnel setup** — the human does this themselves (salary.glappet.eu).
+- **Cloudflare Tunnel setup** — the human does this themselves (conteo.glappet.eu).
 - **The 2% tax rate** — a given, not something to research.
