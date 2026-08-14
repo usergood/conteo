@@ -2,6 +2,7 @@ import type {
   AuthConfig,
   BankSettings,
   CloseView,
+  CurrencyOption,
   ForecastResponse,
   HydratePayload,
   IncomeSource,
@@ -62,7 +63,9 @@ export const api = {
 
   settingsSeed: () => request<SettingsSeed>('/api/settings/seed'),
 
-  saveBank: (bank: { fixedFee: number; convPct: number; taxPct: number }) =>
+  currencies: () => request<CurrencyOption[]>('/api/settings/currencies'),
+
+  saveBank: (bank: { currency: string; fixedFee: number; convPct: number; taxPct: number }) =>
     request<BankSettings>('/api/settings/bank', { method: 'PUT', body: JSON.stringify(bank) }),
 
   saveLanguage: (language: string) =>

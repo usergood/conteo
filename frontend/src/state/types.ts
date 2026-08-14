@@ -185,6 +185,11 @@ export interface SettingsSeed {
   taxPct: number;
 }
 
+export interface CurrencyOption {
+  code: string;
+  name: string;
+}
+
 export interface ForecastProject {
   id: string;
   name: string;

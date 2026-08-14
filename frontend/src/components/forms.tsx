@@ -5,6 +5,7 @@ import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
 import type { BankSettings, IncomeSource, Project } from '@/state/types';
 import { useApp } from '@/components/App';
+import { CurrencySelect } from '@/components/CurrencySelect';
 
 export interface SaveHandle {
   /** Persists the form. Resolves true on success, false on failure. */
@@ -31,6 +32,7 @@ export const BankFields = forwardRef<SaveHandle, { initial?: BankSettings | null
 ) {
   const { t } = useI18n();
   const { dispatch } = useApp();
+  const [currency, setCurrency] = useState(initial?.currency ?? 'MXN');
   const [fee, setFee] = useState(String(initial?.fixedFee ?? 320));
   const [pct, setPct] = useState(String(initial?.convPct ?? 0));
   const [tax, setTax] = useState(String(initial?.taxPct ?? 0));
@@ -38,6 +40,7 @@ export const BankFields = forwardRef<SaveHandle, { initial?: BankSettings | null
 
   useEffect(() => {
     if (initial) {
+      setCurrency(initial.currency ?? 'MXN');
       setFee(String(initial.fixedFee));
       setPct(String(initial.convPct));
       setTax(String(initial.taxPct));
@@ -54,7 +57,7 @@ export const BankFields = forwardRef<SaveHandle, { initial?: BankSettings | null
     save: async () => {
       setErr('');
       try {
-        const saved = await api.saveBank({ fixedFee: Number(fee) || 0, convPct: Number(pct) || 0, taxPct: Number(tax) || 0 });
+        const saved = await api.saveBank({ currency, fixedFee: Number(fee) || 0, convPct: Number(pct) || 0, taxPct: Number(tax) || 0 });
         dispatch({ type: 'SAVE_BANK', bank: { ...saved }, firstTime: !initial });
         return true;
       } catch (e) {
@@ -68,7 +71,7 @@ export const BankFields = forwardRef<SaveHandle, { initial?: BankSettings | null
     <>
       <div className="field">
         <label>{t('settings.currency')}</label>
-        <input type="text" value={initial?.currency ?? 'MXN'} disabled />
+        <CurrencySelect value={currency} onChange={setCurrency} ariaLabel={t('settings.currency')} />
         <div className="hint">{t('settings.currency.fixed')}</div>
       </div>
       <div className="field">
@@ -139,7 +142,7 @@ export const SourceFields = forwardRef<SaveHandle, { initial?: IncomeSource }>(f
       </div>
       <div className="field">
         <label>{t('sources.currency')}</label>
-        <input type="text" value={currency} onChange={(e) => setCurrency(e.target.value)} />
+        <CurrencySelect value={currency} onChange={setCurrency} ariaLabel={t('sources.currency')} />
       </div>
       <div className="field">
         <label>{t('sources.salary')}</label>

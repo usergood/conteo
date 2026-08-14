@@ -16,6 +16,11 @@ vi.mock('@/lib/api', () => ({
     settingsSeed: vi.fn().mockResolvedValue({ currency: 'MXN', fixedFee: 320, convPct: 3, taxPct: 2 }),
     saveGuideStatus: vi.fn().mockResolvedValue({ guideStatus: 'done' }),
     saveBank: vi.fn(),
+    currencies: vi.fn().mockResolvedValue([
+      { code: 'USD', name: 'US Dollar' },
+      { code: 'MXN', name: 'Mexican Peso' },
+      { code: 'SEK', name: 'Swedish Krona' },
+    ]),
     googleUrl: vi.fn(),
     devLogin: vi.fn(),
   },

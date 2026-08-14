@@ -15,6 +15,7 @@ from pydantic import BaseModel
 
 from ..auth import get_db_conn, now_iso, require_onboarded, require_user
 from ..serializers import project_dict, source_dict
+from ..services.currencies import is_supported
 
 router = APIRouter(prefix="/api", tags=["sources"])
 
@@ -55,6 +56,8 @@ def create_source(
         raise HTTPException(status_code=422, detail="invalid_commission_mode")
     if not body.name.strip() or not body.currency.strip():
         raise HTTPException(status_code=422, detail="name_and_currency_required")
+    if not is_supported(body.currency):
+        raise HTTPException(status_code=422, detail="unsupported_currency")
     source_id = "s" + secrets.token_hex(8)
     now = now_iso()
     conn.execute(
@@ -75,6 +78,8 @@ def update_source(
     _get_owned_source(conn, source_id, user.sub)
     if body.commissionMode not in ("none", "pct", "flat"):
         raise HTTPException(status_code=422, detail="invalid_commission_mode")
+    if not is_supported(body.currency):
+        raise HTTPException(status_code=422, detail="unsupported_currency")
     conn.execute(
         "UPDATE income_sources SET name = ?, currency = ?, fixed_salary = ?, commission_mode = ?, "
         "commission_value = ?, updated_at = ? WHERE id = ? AND owner_user_id = ?",

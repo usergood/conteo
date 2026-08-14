@@ -109,6 +109,59 @@ def test_guide_status_migration_backfills_existing_bank_users():
     assert u3 == "skipped"
 
 
+def test_currencies_requires_session(client):
+    """Ticket 14: the canonical currency list is behind the session cookie."""
+    assert client.get("/api/settings/currencies").status_code == 401
+
+
+def test_currencies_list_covers_provider_set(client, login):
+    """Ticket 14: GET /api/settings/currencies returns the provider's set as
+    [{code, name}, ...], sorted by code, and includes USD + MXN."""
+    login()
+    r = client.get("/api/settings/currencies")
+    assert r.status_code == 200
+    cur = r.json()
+    assert len(cur) == 166
+    codes = [entry["code"] for entry in cur]
+    assert codes == sorted(codes)
+    assert "USD" in codes and "MXN" in codes
+    by_code = {entry["code"]: entry for entry in cur}
+    assert by_code["USD"]["name"] == "US Dollar"
+    assert by_code["MXN"]["name"] == "Mexican Peso"
+
+
+def test_source_rejects_unsupported_currency(client, onboard):
+    """Ticket 14: a source currency outside the provider's set is rejected on write."""
+    onboard()
+    ok = client.post("/api/sources", json={"name": "US", "currency": "USD"})
+    assert ok.status_code == 200
+    bad = client.post("/api/sources", json={"name": "X", "currency": "ZZZ"})
+    assert bad.status_code == 422
+    assert bad.json()["detail"] == "unsupported_currency"
+
+
+def test_source_update_rejects_unsupported_currency(client, onboard):
+    """Ticket 14: updating an existing source to an unknown currency is rejected."""
+    onboard()
+    sid = client.post("/api/sources", json={"name": "SE", "currency": "SEK"}).json()["id"]
+    r = client.put(f"/api/sources/{sid}", json={
+        "name": "SE", "currency": "NOPE", "fixedSalary": 0, "commissionMode": "none", "commissionValue": 0,
+    })
+    assert r.status_code == 422
+    assert r.json()["detail"] == "unsupported_currency"
+
+
+def test_bank_accepts_and_validates_currency(client, login):
+    """Ticket 14: bank settings carry a currency (default MXN) and reject unknown ones."""
+    login()
+    ok = client.put("/api/settings/bank", json={"currency": "MXN", "fixedFee": 320, "convPct": 3, "taxPct": 2})
+    assert ok.status_code == 200
+    assert ok.json()["currency"] == "MXN"
+    bad = client.put("/api/settings/bank", json={"currency": "ZZZ", "fixedFee": 320, "convPct": 3, "taxPct": 2})
+    assert bad.status_code == 422
+    assert bad.json()["detail"] == "unsupported_currency"
+
+
 def test_save_bank_and_hydrate(client, login):
     login()
     r = client.put("/api/settings/bank", json={"fixedFee": 320, "convPct": 3, "taxPct": 2})

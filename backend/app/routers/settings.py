@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from ..auth import get_db_conn, now_iso, require_user
 from ..config import seed_defaults
 from ..serializers import bank_dict
+from ..services.currencies import CURRENCIES, is_supported
 
 router = APIRouter(prefix="/api/settings", tags=["settings"])
 
@@ -16,7 +17,14 @@ def seed():
     return seed_defaults()
 
 
+@router.get("/currencies")
+def list_currencies(user=Depends(require_user)):
+    """The provider's canonical currency set as [{code, name}, ...] (ticket 14)."""
+    return [{"code": code, "name": name} for code, name in sorted(CURRENCIES.items())]
+
+
 class BankBody(BaseModel):
+    currency: str = "MXN"
     fixedFee: float
     convPct: float
     taxPct: float
@@ -24,13 +32,16 @@ class BankBody(BaseModel):
 
 @router.put("/bank")
 def save_bank(body: BankBody, conn: sqlite3.Connection = Depends(get_db_conn), user=Depends(require_user)):
+    if not is_supported(body.currency):
+        raise HTTPException(status_code=422, detail="unsupported_currency")
     now = now_iso()
     conn.execute(
         "INSERT INTO bank_settings (owner_user_id, currency, fixed_fee, conv_pct, tax_pct, created_at, updated_at) "
-        "VALUES (?, 'MXN', ?, ?, ?, ?, ?) "
-        "ON CONFLICT(owner_user_id) DO UPDATE SET fixed_fee = excluded.fixed_fee, "
-        "conv_pct = excluded.conv_pct, tax_pct = excluded.tax_pct, updated_at = excluded.updated_at",
-        (user.sub, body.fixedFee, body.convPct, body.taxPct, now, now),
+        "VALUES (?, ?, ?, ?, ?, ?, ?) "
+        "ON CONFLICT(owner_user_id) DO UPDATE SET currency = excluded.currency, "
+        "fixed_fee = excluded.fixed_fee, conv_pct = excluded.conv_pct, "
+        "tax_pct = excluded.tax_pct, updated_at = excluded.updated_at",
+        (user.sub, body.currency.upper(), body.fixedFee, body.convPct, body.taxPct, now, now),
     )
     conn.commit()
     row = conn.execute(
