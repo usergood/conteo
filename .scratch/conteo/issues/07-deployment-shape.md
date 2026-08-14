@@ -23,6 +23,8 @@ Deployment shape, agreed by grilling:
 
 **Packaging** — one container: Next.js (standalone) + FastAPI + SQLite. Next.js serves the app and rewrites `/api/*` to FastAPI on an internal, unexposed port. Nothing outside the container is persisted except the data dir.
 
+**Build tooling** — the frontend is built with **pnpm only** (never npm): version pinned via the `packageManager` field in `package.json`, settings (`allowBuilds`, `overrides`) in `pnpm-workspace.yaml`, and the Dockerfile uses Corepack + `pnpm install --frozen-lockfile`. See ADR-0001. No `package-lock.json` is committed.
+
 **Tunnel / routing** — single public hostname `https://conteo.YOUR_DOMAIN` → one origin. cloudflared runs on the host, pointing at `http://127.0.0.1:3000`. Only the web port is published, bound to localhost; FastAPI is never directly reachable. TLS terminates at Cloudflare; the origin is plain HTTP.
 
 **Mount** — one host directory (e.g. `~/conteo/`) bind-mounted at `/data` inside the container. Holds:
