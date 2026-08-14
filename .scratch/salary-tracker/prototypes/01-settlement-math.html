@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Settlement math checker — prototype</title>
+<style>
+  :root {
+    --accent: #2563eb;
+    --accent-soft: #eff6ff;
+    --ink: #1f2937;
+    --muted: #6b7280;
+    --line: #e5e7eb;
+    --panel: #ffffff;
+    --warn: #b45309;
+    --warn-soft: #fffbeb;
+    --ok: #15803d;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: #f8fafc;
+    line-height: 1.55;
+  }
+  main { max-width: 880px; margin: 0 auto; padding: 40px 20px 80px; }
+  header.badge {
+    display: inline-block;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    padding: 3px 12px;
+    margin-bottom: 18px;
+  }
+  h1 { font-size: 30px; margin: 0 0 10px; line-height: 1.2; }
+  p.question {
+    font-size: 16px;
+    color: var(--muted);
+    margin: 0 0 8px;
+    max-width: 62ch;
+  }
+  p.formula {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    padding: 10px 14px;
+    border-radius: 0 8px 8px 0;
+    font-size: 15px;
+    margin: 0 0 28px;
+  }
+  p.formula code { background: #fff; border: 1px solid var(--line); padding: 1px 6px; border-radius: 5px; font-size: 14px; }
+
+  section { margin-bottom: 36px; }
+  section h2 {
+    font-size: 18px;
+    margin: 0 0 4px;
+  }
+  section > p.sub { color: var(--muted); font-size: 14px; margin: 0 0 14px; }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 20px;
+  }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  @media (max-width: 700px) { .cols { grid-template-columns: 1fr; } }
+  .col h3 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    margin: 0 0 12px;
+  }
+
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 14px; margin-bottom: 4px; }
+  .field .hint { font-size: 12px; color: var(--muted); }
+  .field input {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 16px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    margin-top: 3px;
+  }
+  .field input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .field .suffix { font-size: 12px; color: var(--muted); }
+
+  .readout {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 7px 0;
+    border-bottom: 1px dashed var(--line);
+    font-size: 15px;
+  }
+  .readout:last-child { border-bottom: 0; }
+  .readout .label { color: var(--muted); }
+  .readout .value { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .readout .value.rate { font-size: 19px; color: var(--accent); }
+  .readout .value.delta-ok { color: var(--ok); }
+  .readout .value.delta-bad { color: var(--warn); }
+
+  .changed {
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--accent);
+    min-height: 20px;
+  }
+
+  .slip {
+    margin-top: 16px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .slip .head {
+    background: #f1f5f9;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--muted);
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--line);
+  }
+  .slip .row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--line);
+    font-size: 14px;
+  }
+  .slip .row:last-child { border-bottom: 0; }
+  .slip .row .k { color: var(--muted); }
+  .slip .row .v { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .slip .row.highlight { background: var(--accent-soft); }
+
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .tab {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    padding: 8px 14px;
+    border-radius: 999px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+  .tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .tab:hover:not(.active) { border-color: var(--accent); }
+
+  .scenario-blurb { font-size: 14px; color: var(--muted); margin-bottom: 14px; max-width: 72ch; }
+
+  .step {
+    width: 100%;
+    text-align: left;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--panel);
+    font-size: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .step .n {
+    flex: 0 0 24px;
+    height: 24px;
+    border-radius: 999px;
+    background: #f1f5f9;
+    color: var(--muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .step:hover { border-color: var(--accent); }
+  .step.done { border-color: var(--ok); }
+  .step.done .n { background: var(--ok); color: #fff; }
+  .step.current { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .step.current .n { background: var(--accent); color: #fff; }
+  .step .note { color: var(--muted); font-size: 13px; }
+
+  .btn {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 15px;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn:hover { filter: brightness(0.97); }
+
+  footer { color: var(--muted); font-size: 13px; margin-top: 30px; border-top: 1px solid var(--line); padding-top: 14px; }
+</style>
+</head>
+<body>
+<main>
+
+  <header class="badge">Prototype — throwaway</header>
+  <h1>Settlement math checker</h1>
+  <p class="question">
+    At month close you type the exact MXN that hit your CitiBancoMex account. The app already knows the
+    month's USD paid and your settings (bank %, fixed fee, tax %). <strong>Is the derived bank rate
+    correct — for a single transfer, several transfers, and the "one transfer vs per-project transfers"
+    choice at close?</strong> Drive it with your real bank statement numbers and see.
+  </p>
+  <p class="formula">
+    App derives the bank's effective rate:
+    <code>rate = (typed MXN + transfers × fixed fee) ÷ (USD paid × (1 − bank %))</code>
+  </p>
+
+  <section>
+    <h2>Current settlement</h2>
+    <p class="sub">Type your numbers on the left (free play — swap in real bank statement figures). Everything else is derived.</p>
+    <div class="panel">
+      <div class="cols">
+        <div class="col">
+          <h3>You enter</h3>
+          <div class="field">
+            <label for="usdPaid">USD paid this month</label>
+            <input id="usdPaid" type="number" min="0" step="any">
+            <div class="hint">Total USD the bank converted (all transfers summed).</div>
+          </div>
+          <div class="field">
+            <label for="typedMxn">MXN that hit the account</label>
+            <input id="typedMxn" type="number" min="0" step="any">
+            <div class="hint">Exact bank-net from your statement, after the bank's % and fees.</div>
+          </div>
+          <div class="field">
+            <label for="transfers">Transfers in this month</label>
+            <input id="transfers" type="number" min="1" step="1">
+            <div class="hint">How many separate transfers landed. Each costs one fixed fee.</div>
+          </div>
+          <div class="field">
+            <label for="bankPct">Bank % on conversion</label>
+            <input id="bankPct" type="number" min="0" step="any">
+            <div class="hint">Static percentage the bank takes on the conversion (setting) — decimals fine, e.g. 1.5 or 3.</div>
+          </div>
+          <div class="field">
+            <label for="fixedFee">Fixed fee per transfer</label>
+            <input id="fixedFee" type="number" min="0" step="any">
+            <div class="hint">320 MXN default (setting).</div>
+          </div>
+          <div class="field">
+            <label for="taxPct">Tax</label>
+            <input id="taxPct" type="number" min="0" step="any">
+            <div class="hint">2% of the bank-net (setting).</div>
+          </div>
+          <button class="btn" id="resetBtn">Reset to defaults</button>
+          <p class="changed" id="changed"></p>
+        </div>
+
+        <div class="col">
+          <h3>App derives</h3>
+          <div class="readout">
+            <span class="label">Effective bank rate (MXN per USD)</span>
+            <span class="value rate" id="outRate">—</span>
+          </div>
+          <div class="readout">
+            <span class="label">Gross MXN before bank took its cut</span>
+            <span class="value" id="outGross">—</span>
+          </div>
+          <div class="readout">
+            <span class="label">Bank kept — % take + fees</span>
+            <span class="value" id="outKept">—</span>
+          </div>
+          <div class="readout">
+            <span class="label">Of which % take / fixed fees</span>
+            <span class="value" id="outKeptSplit">—</span>
+          </div>
+          <div class="readout">
+            <span class="label">Tax (2% of bank-net)</span>
+            <span class="value" id="outTax">—</span>
+          </div>
+          <div class="readout">
+            <span class="label">Round-trip check (should be 0.00)</span>
+            <span class="value" id="outRoundTrip">—</span>
+          </div>
+
+          <div class="slip">
+            <div class="head">Salary slip — side by side</div>
+            <div class="row highlight">
+              <span class="k">Bank-net</span>
+              <span class="v" id="slipNet">—</span>
+            </div>
+            <div class="row highlight">
+              <span class="k">Bank-net − tax</span>
+              <span class="v" id="slipAfterTax">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Guided scenarios</h2>
+    <p class="sub">One tab per awkward case. Click a scenario to reset, then press its steps in order.</p>
+    <div class="tabs" id="tabs"></div>
+    <div class="panel">
+      <p class="scenario-blurb" id="scenarioBlurb"></p>
+      <div id="steps"></div>
+    </div>
+  </section>
+
+  <footer>
+    Throwaway prototype for ticket "01 Validate the settlement math". The math module below lifts into the
+    real codebase; this page is not production.
+  </footer>
+
+</main>
+
+<script>
+/* =========================================================================
+   PURE LOGIC MODULE — lifts into the real codebase. No DOM access here.
+   ========================================================================= */
+const settlement = (() => {
+  const initialState = {
+    usdPaid: 2500,
+    typedMxn: 0,
+    transfers: 1,
+    settings: { bankPct: 3, fixedFee: 320, taxPct: 2 }
+  };
+
+  // The single question the prototype answers: is this derivation right?
+  function derive(state) {
+    const { usdPaid, typedMxn, transfers, settings } = state;
+    const fees = transfers * settings.fixedFee;
+    const usdNet = usdPaid * (1 - settings.bankPct / 100);
+    const rate = usdPaid > 0 && usdNet > 0 ? (typedMxn + fees) / usdNet : null;
+    const gross = rate != null ? rate * usdPaid : null;
+    const bankPctTake = gross != null ? gross * settings.bankPct / 100 : null;
+    const bankKept = gross != null ? gross - typedMxn : null;
+    const tax = typedMxn * settings.taxPct / 100;
+    const netAfterTax = typedMxn - tax;
+    const roundTrip = rate != null
+      ? rate * usdPaid * (1 - settings.bankPct / 100) - fees - typedMxn
+      : null;
+    return {
+      fees,
+      usdNet,
+      rate,
+      gross,
+      bankPctTake,
+      bankKept,
+      tax,
+      netAfterTax,
+      roundTrip
+    };
+  }
+
+  function reducer(state, action) {
+    switch (action.type) {
+      case 'SET_USD_PAID': return { ...state, usdPaid: action.value };
+      case 'SET_TYPED_MXN': return { ...state, typedMxn: action.value };
+      case 'SET_TRANSFERS': return { ...state, transfers: action.value };
+      case 'SET_BANK_PCT': return { ...state, settings: { ...state.settings, bankPct: action.value } };
+      case 'SET_FIXED_FEE': return { ...state, settings: { ...state.settings, fixedFee: action.value } };
+      case 'SET_TAX_PCT': return { ...state, settings: { ...state.settings, taxPct: action.value } };
+      case 'LOAD': return action.state;
+      case 'RESET': return initialState;
+      default: return state;
+    }
+  }
+
+  return { initialState, derive, reducer };
+})();
+
+/* =========================================================================
+   PAGE SHELL — the throwaway part. Everything below talks to the module.
+   ========================================================================= */
+const fmt = (v, digits) =>
+  v == null || !isFinite(v) ? '—' : v.toLocaleString('en-US', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+
+const state = { current: settlement.initialState, lastAction: null };
+
+const els = {};
+function bind() {
+  ['usdPaid', 'typedMxn', 'transfers', 'bankPct', 'fixedFee', 'taxPct'].forEach(id => {
+    els[id] = document.getElementById(id);
+  });
+  els.changed = document.getElementById('changed');
+  ['outRate', 'outGross', 'outKept', 'outKeptSplit', 'outTax', 'outRoundTrip', 'slipNet', 'slipAfterTax'].forEach(id => {
+    els[id] = document.getElementById(id);
+  });
+  els.tabs = document.getElementById('tabs');
+  els.blurb = document.getElementById('scenarioBlurb');
+  els.steps = document.getElementById('steps');
+  document.getElementById('resetBtn').addEventListener('click', () => dispatch({ type: 'RESET' }));
+}
+
+function dispatch(action, changeMessage) {
+  state.current = settlement.reducer(state.current, action);
+  state.lastAction = action;
+  if (changeMessage) state.lastMessage = changeMessage;
+  render();
+}
+
+const changeMessages = {
+  SET_USD_PAID: 'USD paid changed — rate recomputed.',
+  SET_TYPED_MXN: 'Typed MXN changed — this is the bank-net the derivation is anchored to.',
+  SET_TRANSFERS: 'Transfers changed — each costs one fixed fee, so the derived rate moves.',
+  SET_BANK_PCT: 'Bank % changed — more % means a higher derived rate for the same bank-net.',
+  SET_FIXED_FEE: 'Fixed fee changed.',
+  SET_TAX_PCT: 'Tax % changed — affects only the slip, not the derived rate.'
+};
+
+function render() {
+  const s = state.current;
+  const d = settlement.derive(s);
+
+  els.usdPaid.value = s.usdPaid;
+  els.typedMxn.value = s.typedMxn;
+  els.transfers.value = s.transfers;
+  els.bankPct.value = s.settings.bankPct;
+  els.fixedFee.value = s.settings.fixedFee;
+  els.taxPct.value = s.settings.taxPct;
+
+  els.outRate.textContent = fmt(d.rate, 4);
+  els.outGross.textContent = fmt(d.gross, 2);
+  els.outKept.textContent = fmt(d.bankKept, 2);
+  els.outKeptSplit.textContent =
+    (d.bankPctTake != null ? fmt(d.bankPctTake, 2) : '—') + ' + ' +
+    (d.fees != null ? fmt(d.fees, 2) : '—') + ' fees';
+  els.outTax.textContent = fmt(d.tax, 2);
+  els.outRoundTrip.textContent = fmt(d.roundTrip, 2);
+
+  const rt = els.outRoundTrip;
+  rt.className = 'value' + (d.roundTrip == null ? '' : (Math.abs(d.roundTrip) <= 0.5 ? ' delta-ok' : ' delta-bad'));
+
+  els.slipNet.textContent = fmt(d.rate != null ? s.typedMxn : null, 2);
+  els.slipAfterTax.textContent = fmt(d.rate != null ? d.netAfterTax : null, 2);
+
+  els.changed.textContent = state.lastMessage || '';
+}
+
+/* ---- walkthroughs ---- */
+
+const scenarios = [
+  {
+    id: 'single',
+    title: 'One transfer, one project',
+    initial: { ...settlement.initialState, usdPaid: 2500, typedMxn: 0, transfers: 1, settings: { bankPct: 3, fixedFee: 320, taxPct: 2 } },
+    blurb: 'One project closes this month; the bank pays you in a single transfer. Press the steps, then swap in your real bank statement number for step 2 and check the derived rate against the rate your bank actually used.',
+    steps: [
+      { label: 'Reset to a fresh month', note: '', action: { type: 'RESET' } },
+      { label: 'Set USD paid to 2,500', note: 'the single project', action: { type: 'SET_USD_PAID', value: 2500 } },
+      { label: 'Keep one transfer', note: 'one fixed fee (320 MXN)', action: { type: 'SET_TRANSFERS', value: 1 } },
+      { label: 'Type the MXN that landed: 43,000', note: 'swap in your real statement number', action: { type: 'SET_TYPED_MXN', value: 43000 } },
+      { label: 'Confirm settings: bank 3%, fee 320, tax 2%', note: '', action: [
+        { type: 'SET_BANK_PCT', value: 3 }, { type: 'SET_FIXED_FEE', value: 320 }, { type: 'SET_TAX_PCT', value: 2 }
+      ] },
+      { label: 'Read the slip: bank-net vs bank-net − tax', note: '', action: [] }
+    ],
+    message: 'Single transfer: rate is derived from the typed bank-net and one fixed fee.'
+  },
+  {
+    id: 'multi',
+    title: 'Two transfers, one month',
+    initial: { ...settlement.initialState, usdPaid: 5000, typedMxn: 0, transfers: 2, settings: { bankPct: 3, fixedFee: 320, taxPct: 2 } },
+    blurb: 'Two projects both paid out this month — the bank lands two transfers, so two fixed fees. You type the total MXN that hit the account. The derived rate is a blend; with the same settings it should come out equal to the single-transfer case.',
+    steps: [
+      { label: 'Reset to a fresh month', note: '', action: { type: 'RESET' } },
+      { label: 'Set USD paid to 5,000', note: '2,000 + 3,000 across two projects', action: { type: 'SET_USD_PAID', value: 5000 } },
+      { label: 'Set transfers to 2', note: 'two fixed fees (640 MXN total)', action: { type: 'SET_TRANSFERS', value: 2 } },
+      { label: 'Type the total MXN that landed: 86,000', note: '', action: { type: 'SET_TYPED_MXN', value: 86000 } },
+      { label: 'Confirm settings: bank 3%, fee 320, tax 2%', note: '', action: [
+        { type: 'SET_BANK_PCT', value: 3 }, { type: 'SET_FIXED_FEE', value: 320 }, { type: 'SET_TAX_PCT', value: 2 }
+      ] },
+      { label: 'Compare the rate to the one-transfer scenario', note: 'should match ~17.86', action: [] }
+    ],
+    message: 'Two transfers: both fixed fees are subtracted before deriving the blended rate.'
+  },
+  {
+    id: 'close',
+    title: 'Close option: one vs per-project transfers',
+    initial: { ...settlement.initialState, usdPaid: 4500, typedMxn: 77400, transfers: 1, settings: { bankPct: 3, fixedFee: 320, taxPct: 2 } },
+    blurb: 'Same month, same money — but at close you tell the app whether the money arrived as ONE transfer or PER-PROJECT (three projects = three transfers). The choice changes how many fixed fees get subtracted, so it moves the derived rate. Pick the option that matches your bank statement, or the rate drifts.',
+    steps: [
+      { label: 'Reset: 3 projects, 4,500 USD, 77,400 MXN landed', note: '', action: { type: 'LOAD', state: { ...settlement.initialState, usdPaid: 4500, typedMxn: 77400, transfers: 1, settings: { bankPct: 3, fixedFee: 320, taxPct: 2 } } } },
+      { label: 'Assume ONE transfer (1 × 320 MXN fee)', note: 'rate should read ~17.81', action: { type: 'SET_TRANSFERS', value: 1 } },
+      { label: 'Now choose PER-PROJECT transfers (3 × 320 MXN)', note: 'watch the derived rate jump', action: { type: 'SET_TRANSFERS', value: 3 } },
+      { label: 'Which answer matches your statement?', note: 'the correct one keeps the rate truthful', action: [] }
+    ],
+    message: 'Close option toggled: each transfer adds a fixed fee, shifting the derived rate.'
+  },
+  {
+    id: 'mistype',
+    title: 'Sensitivity: a mistyped MXN',
+    initial: { ...settlement.initialState, usdPaid: 2500, typedMxn: 43000, transfers: 1, settings: { bankPct: 3, fixedFee: 320, taxPct: 2 } },
+    blurb: 'The derivation is anchored to the number you type — so typing accuracy matters. See how far the rate drifts when the typed MXN is off by a few pesos, and confirm the round-trip check stays at 0.00 when the number is consistent.',
+    steps: [
+      { label: 'Reset: 2,500 USD, one transfer, 43,000 MXN landed', note: '', action: { type: 'LOAD', state: { ...settlement.initialState, usdPaid: 2500, typedMxn: 43000, transfers: 1, settings: { bankPct: 3, fixedFee: 320, taxPct: 2 } } } },
+      { label: 'Read the rate and round-trip check', note: 'round-trip is 0.00 by construction', action: [] },
+      { label: 'Mistype: 42,950 instead of 43,000 (−50 MXN)', note: 'watch the rate drift', action: { type: 'SET_TYPED_MXN', value: 42950 } },
+      { label: 'Mistype the other way: 43,100 (+100 MXN)', note: 'rate drifts the other way', action: { type: 'SET_TYPED_MXN', value: 43100 } },
+      { label: 'A small mistype barely moves the rate', note: 'but the slip tax is wrong — trust the statement', action: [] }
+    ],
+    message: 'Sensitivity demo: ±50–100 MXN shifts the derived rate by hundredths.'
+  }
+];
+
+let activeScenario = 0;
+let stepIndex = 0;
+
+function renderTabs() {
+  els.tabs.innerHTML = '';
+  scenarios.forEach((sc, i) => {
+    const b = document.createElement('button');
+    b.className = 'tab' + (i === activeScenario ? ' active' : '');
+    b.textContent = sc.title;
+    b.addEventListener('click', () => openScenario(i));
+    els.tabs.appendChild(b);
+  });
+}
+
+function openScenario(i) {
+  activeScenario = i;
+  stepIndex = 0;
+  const sc = scenarios[i];
+  state.current = settlement.reducer(state.current, { type: 'LOAD', state: sc.initial });
+  state.lastMessage = sc.message;
+  renderTabs();
+  render();
+  renderSteps();
+}
+
+function renderSteps() {
+  const sc = scenarios[activeScenario];
+  els.blurb.textContent = sc.blurb;
+  els.steps.innerHTML = '';
+  sc.steps.forEach((step, i) => {
+    const b = document.createElement('button');
+    b.className = 'step' + (i < stepIndex ? ' done' : i === stepIndex ? ' current' : '');
+    const n = document.createElement('span');
+    n.className = 'n';
+    n.textContent = String(i + 1);
+    b.appendChild(n);
+    const txt = document.createElement('span');
+    txt.textContent = step.label;
+    b.appendChild(txt);
+    if (step.note) {
+      const note = document.createElement('span');
+      note.className = 'note';
+      note.textContent = ' — ' + step.note;
+      b.appendChild(note);
+    }
+    b.addEventListener('click', () => runStep(i));
+    els.steps.appendChild(b);
+  });
+}
+
+function runStep(i) {
+  const sc = scenarios[activeScenario];
+  const step = sc.steps[i];
+  const actions = Array.isArray(step.action) ? step.action : [step.action];
+  let lastMsg = null;
+  actions.forEach(a => {
+    if (!a || !a.type) return;
+    state.current = settlement.reducer(state.current, a);
+    if (a.type !== 'LOAD') lastMsg = a.type;
+  });
+  state.lastMessage = lastMsg ? (changeMessages[lastMsg] || sc.message) : sc.message;
+  stepIndex = Math.max(stepIndex, i + 1);
+  render();
+  renderSteps();
+}
+
+/* ---- wire up free-play inputs ---- */
+function wireInputs() {
+  els.usdPaid.addEventListener('input', e => dispatch({ type: 'SET_USD_PAID', value: parseFloat(e.target.value) || 0 }));
+  els.typedMxn.addEventListener('input', e => dispatch({ type: 'SET_TYPED_MXN', value: parseFloat(e.target.value) || 0 }));
+  els.transfers.addEventListener('input', e => dispatch({ type: 'SET_TRANSFERS', value: Math.max(1, parseInt(e.target.value, 10) || 1) }));
+  els.bankPct.addEventListener('input', e => dispatch({ type: 'SET_BANK_PCT', value: parseFloat(e.target.value) || 0 }));
+  els.fixedFee.addEventListener('input', e => dispatch({ type: 'SET_FIXED_FEE', value: parseFloat(e.target.value) || 0 }));
+  els.taxPct.addEventListener('input', e => dispatch({ type: 'SET_TAX_PCT', value: parseFloat(e.target.value) || 0 }));
+}
+
+bind();
+wireInputs();
+renderTabs();
+render();
+renderSteps();
+</script>
+</body>
+</html>
