@@ -31,7 +31,14 @@ export const AppContext = createContext<AppContextValue>({
 
 export const useApp = () => useContext(AppContext);
 
-const NAV: Screen[] = ['forecast', 'sources', 'close', 'months', 'share', 'settings'];
+const NAV: { screen: Screen; icon: string }[] = [
+  { screen: 'forecast', icon: '📈' },
+  { screen: 'sources', icon: '🏢' },
+  { screen: 'close', icon: '💰' },
+  { screen: 'months', icon: '🗓️' },
+  { screen: 'share', icon: '🔗' },
+  { screen: 'settings', icon: '⚙️' },
+];
 
 const LANG_STORAGE_KEY = 'conteo-language';
 
@@ -130,29 +137,32 @@ export function App() {
           )}
         </header>
 
-        {screen !== 'login' && (
-          <nav className="nav">
-            {NAV.map((s) => (
-              <button
-                key={s}
-                className={screen === s ? 'active' : ''}
-                onClick={() => dispatch({ type: 'SET_SCREEN', screen: s })}
-              >
-                {tValue.t(s)}
-              </button>
-            ))}
-          </nav>
-        )}
+        <div className="page-shell">
+          {screen !== 'login' && (
+            <nav className="nav">
+              {NAV.map(({ screen: s, icon }) => (
+                <button
+                  key={s}
+                  className={screen === s ? 'active' : ''}
+                  onClick={() => dispatch({ type: 'SET_SCREEN', screen: s })}
+                >
+                  <span className="nav-ico">{icon}</span>
+                  <span className="nav-label">{tValue.t(s)}</span>
+                </button>
+              ))}
+            </nav>
+          )}
 
-        <main className="app">
-          {screen === 'login' && <LoginScreen />}
-          {screen === 'settings' && <SettingsScreen />}
-          {screen === 'sources' && <SourcesScreen />}
-          {screen === 'close' && <CloseScreen />}
-          {screen === 'forecast' && <ForecastScreen />}
-          {screen === 'months' && <MonthsScreen />}
-          {screen === 'share' && <ShareScreen />}
-        </main>
+          <main className="app">
+            {screen === 'login' && <LoginScreen />}
+            {screen === 'settings' && <SettingsScreen />}
+            {screen === 'sources' && <SourcesScreen />}
+            {screen === 'close' && <CloseScreen />}
+            {screen === 'forecast' && <ForecastScreen />}
+            {screen === 'months' && <MonthsScreen />}
+            {screen === 'share' && <ShareScreen />}
+          </main>
+        </div>
       </I18nContext.Provider>
     </AppContext.Provider>
   );

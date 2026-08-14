@@ -1,35 +1,49 @@
-/* theming (ticket 11) — light purple / dark blue */
+/* theming (tickets 9 + 11) — Palette B "Stone & Plum", warm-plum accent,
+   warm beige light topbar, deep-neutral dark surfaces. Values settled in
+   prototype/color-theme (0d2111f); do not redesign. */
 :root[data-theme='light'] {
-  --bg: #f5f3fb;
-  --panel: #ffffff;
-  --ink: #242034;
-  --muted: #6e6a88;
-  --line: #e6e2f3;
-  --accent: #6d4aff;
+  --bg: #f4f1ea;
+  --panel: #fdfbf6;
+  --ink: #2a2533;
+  --muted: #6f6877;
+  --line: #e6dfd2;
+  --accent: #8a3368;        /* warm plum / berry, no violet */
   --accent-ink: #ffffff;
-  --accent-soft: #efeaff;
-  --warn: #b45309;
-  --warn-soft: #fff7e8;
-  --ok: #15803d;
-  --ok-soft: #eef8f0;
-  --appbar: linear-gradient(135deg, #dcd0ff, #c9b8ff);
-  --appbar-ink: #332a5e;
+  --accent-soft: #f4e6ef;   /* warm rose-tinted tint */
+  --warn: #a15c07;
+  --warn-soft: #fbf2e0;
+  --ok: #12743f;
+  --ok-soft: #edf6ef;
+  --appbar: #f1ead8;        /* warm beige topbar */
+  --appbar-ink: #2a2533;
+  --appbar-line: #e2d8c0;
+  --appbar-chip: #fbf7ea;
+  --appbar-chip-line: #cfbd99;
+  --shell: #f9f4e8;         /* page shell — same beige as the topbar */
 }
 :root[data-theme='dark'] {
-  --bg: #0d1020;
-  --panel: #151a33;
-  --ink: #e9e6f8;
-  --muted: #9c98ba;
-  --line: #262c4d;
-  --accent: #8b7bff;
-  --accent-ink: #17122b;
-  --accent-soft: #262148;
-  --warn: #fbbf24;
-  --warn-soft: #2a2110;
-  --ok: #4ade80;
-  --ok-soft: #12261a;
-  --appbar: linear-gradient(135deg, #1e2f5c, #17264b);
-  --appbar-ink: #dbe4f7;
+  --bg: #141017;
+  --panel: #1b171d;
+  --ink: #eeeaec;
+  --muted: #a49ca6;
+  --line: #2d272e;
+  --accent: #e0a3d8;        /* brighter, warmer luminous mauve */
+  --accent-ink: #141017;
+  --accent-soft: #33243d;   /* warm plum tint */
+  --warn: #f5b14e;
+  --warn-soft: #2e2410;
+  --ok: #5fcf86;
+  --ok-soft: #12311d;
+  --appbar: #241f2e;        /* deep neutral topbar */
+  --appbar-ink: #ece8f5;
+  --appbar-line: #3a3350;
+  --appbar-chip: #3a3350;
+  --appbar-chip-line: transparent;
+  --shell: #1b171d;
+  --lift: #241f2e;          /* dark cards lift a step above the shell */
+  --lift-line: #332c40;
+  --primary-fill: #3a2f55;  /* dark primary: soft-accent fill, never dark-on-dark */
+  --primary-ink: #e0a3d8;
 }
 * { box-sizing: border-box; }
 html[data-theme='dark'] { color-scheme: dark; }
@@ -41,9 +55,8 @@ body {
   line-height: 1.55;
   transition: background 0.2s, color 0.2s;
 }
-main.app { max-width: 1180px; margin: 0 auto; padding: 32px 20px 80px; }
 
-/* shell */
+/* ------------------------------- topbar ------------------------------- */
 .appbar {
   display: flex;
   align-items: center;
@@ -51,11 +64,20 @@ main.app { max-width: 1180px; margin: 0 auto; padding: 32px 20px 80px; }
   background: var(--appbar);
   color: var(--appbar-ink);
   padding: 12px 20px;
+  border-radius: 16px;
+  margin: 14px auto 0;
+  max-width: 1180px;
+  width: calc(100% - 32px);
+  border: 1px solid var(--appbar-line);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
 }
 .appbar .logo { width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0; }
 .appbar .title { font-weight: 700; font-size: 18px; }
 .appbar .who { font-size: 13px; opacity: 0.8; }
+.appbar .iconbtn { background: var(--appbar-chip); border-color: var(--appbar-chip-line); color: var(--appbar-ink); }
+.appbar .iconbtn:hover { filter: brightness(0.97); }
 .spacer { flex: 1; }
+
 .iconbtn {
   border: 1px solid var(--line);
   background: var(--panel);
@@ -97,20 +119,45 @@ main.app { max-width: 1180px; margin: 0 auto; padding: 32px 20px 80px; }
 }
 .langsel-row:hover { background: var(--accent-soft); }
 
-.nav { display: flex; gap: 8px; flex-wrap: wrap; padding: 12px 20px 0; max-width: 1180px; margin: 0 auto; }
-.nav button {
+/* ----------------------------- page shell ----------------------------- */
+.page-shell {
+  max-width: 1180px;
+  width: calc(100% - 32px);
+  margin: 12px auto 0;
+  border-radius: 16px;
+  overflow: hidden;
   border: 1px solid var(--line);
-  background: var(--panel);
-  color: var(--ink);
-  padding: 9px 16px;
-  border-radius: 10px;
-  font-size: 15px;
+  background: var(--shell);
+}
+
+/* ------------------------------ nav tabs ------------------------------ */
+.page-shell .nav {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  flex-wrap: wrap;
+  padding: 12px 20px 8px;
+  border-bottom: 1px solid var(--line);
+}
+.page-shell .nav button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 14px;
   cursor: pointer;
 }
-.nav button.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
-.nav button:disabled { opacity: 0.45; cursor: default; }
+.page-shell .nav button.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.page-shell .nav button:disabled { opacity: 0.45; cursor: default; }
+.page-shell .nav .nav-ico { display: none; }
 
-/* cards + panels */
+.page-shell main.app { max-width: none; margin: 0; padding: 20px 24px 80px; }
+
+/* ------------------------- cards + panels ----------------------------- */
 .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-bottom: 16px; }
 .card {
   background: var(--panel);
@@ -180,3 +227,70 @@ h3 { font-size: 17px; }
 table.months { width: 100%; border-collapse: collapse; font-size: 14px; }
 table.months th, table.months td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
 table.months th { color: var(--muted); font-weight: 600; font-size: 13px; }
+
+/* ---------- dark mode: cards lift a step, soft-accent primary ---------- */
+:root[data-theme='dark'] .page-shell .panel,
+:root[data-theme='dark'] .page-shell .card,
+:root[data-theme='dark'] .page-shell .field input,
+:root[data-theme='dark'] .page-shell .field select,
+:root[data-theme='dark'] .page-shell .iconbtn,
+:root[data-theme='dark'] .page-shell .btn:not(.primary) {
+  background: var(--lift);
+  border-color: var(--lift-line);
+}
+:root[data-theme='dark'] .page-shell .btn.primary {
+  background: var(--primary-fill);
+  border-color: var(--accent);
+  color: var(--primary-ink);
+}
+
+/* ----------------------------- mobile -------------------------------- */
+@media (max-width: 640px) {
+  .appbar {
+    width: auto;
+    max-width: none;
+    margin: 0;
+    border-radius: 0 0 14px 14px;
+    box-shadow: none;
+  }
+  .page-shell {
+    max-width: none;
+    width: auto;
+    margin: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+  }
+  .page-shell .nav {
+    position: fixed;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    top: auto;
+    width: auto;
+    flex-direction: row;
+    justify-content: space-around;
+    gap: 0;
+    padding: 6px;
+    margin: 0;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+    z-index: 100;
+  }
+  .page-shell .nav button {
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+    align-items: center;
+    text-align: center;
+    border-radius: 12px;
+    padding: 6px 2px;
+    font-size: 11px;
+  }
+  .page-shell .nav .nav-ico { display: block; font-size: 18px; }
+  .page-shell .nav .nav-label { display: block; }
+  .page-shell .nav button.active { background: var(--accent-soft); color: var(--accent); }
+  .page-shell main.app { padding-bottom: 96px; }
+}
