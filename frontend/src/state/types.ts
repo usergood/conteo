@@ -88,6 +88,9 @@ export interface MonthSummary {
   netTotal: number;
   sourceCount: number;
   sources: string[];
+  grossByCurrency: Record<string, number>;
+  bankNet: number;
+  tax: number;
 }
 
 export interface SharedMonthSummary {
@@ -98,6 +101,9 @@ export interface SharedMonthSummary {
   year: number;
   monthNum: number;
   netAfterTax: number;
+  grossForeign: number;
+  bankNet: number;
+  tax: number;
 }
 
 export interface FxSnapshot {
@@ -135,6 +141,7 @@ export type Action =
   | { type: 'ADD_SOURCE'; source: IncomeSource }
   | { type: 'EDIT_SOURCE'; source: IncomeSource }
   | { type: 'ADD_PROJECT'; project: Project }
+  | { type: 'EDIT_PROJECT'; project: Project }
   | { type: 'CLOSE_MONTH'; settlement: Settlement }
   | { type: 'ADD_SHARE'; share: Share }
   | { type: 'UPDATE_SHARE'; list: 'byMe' | 'withMe'; shareId: string; status: ShareStatus }
@@ -216,6 +223,7 @@ export interface CloseProject {
   name: string;
   value: number;
   commissionForeign: number;
+  approval: string | null;
 }
 
 export interface CloseSourceForm {

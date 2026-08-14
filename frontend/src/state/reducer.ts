@@ -88,6 +88,11 @@ export function reducer(state: AppState = initialState, action: Action): AppStat
       };
     case 'ADD_PROJECT':
       return { ...state, projects: [...state.projects, action.project] };
+    case 'EDIT_PROJECT':
+      return {
+        ...state,
+        projects: state.projects.map((p) => (p.id === action.project.id ? action.project : p)),
+      };
     case 'CLOSE_MONTH':
       return { ...state, settlements: [...state.settlements, action.settlement] };
     case 'ADD_SHARE':
@@ -142,8 +147,21 @@ export function myClosedMonths(state: AppState, currentYear: number, currentMont
   const settled = state.settlements.filter((s) => s.month === key);
   const settledIds = new Set(settled.map((s) => s.sourceId));
   const allClosed = active.every((s) => settledIds.has(s.id));
-  if (allClosed) {
+  // Skip the synthetic row when the backend already lists this month as fully
+  // closed (its id is a real 'YYYY-MM' key). The synthetic 'm-YYYY-MM' id broke
+  // the slip link (invalid_month) — never surface it for a known month.
+  const alreadyListed = list.some((m) => m.year === currentYear && m.monthNum === currentMonthNum);
+  if (allClosed && !alreadyListed) {
     const sources = active.map((s) => s.name);
+    const grossByCurrency: Record<string, number> = {};
+    let bankNet = 0;
+    let tax = 0;
+    for (const st of settled) {
+      const cur = state.sources.find((s) => s.id === st.sourceId)?.currency ?? '';
+      grossByCurrency[cur] = (grossByCurrency[cur] ?? 0) + st.foreignPaid;
+      bankNet += st.typedMxn;
+      tax += st.tax;
+    }
     list.push({
       id: `m-${key}`,
       year: currentYear,
@@ -151,6 +169,9 @@ export function myClosedMonths(state: AppState, currentYear: number, currentMont
       netTotal: settled.reduce((a, s) => a + s.netAfterTax, 0),
       sourceCount: active.length,
       sources,
+      grossByCurrency,
+      bankNet,
+      tax,
     });
   }
   return list;

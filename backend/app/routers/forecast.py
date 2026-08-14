@@ -11,7 +11,7 @@ window, cross-derived from the USD snapshot.
 from fastapi import APIRouter, Depends, Query
 import sqlite3
 
-from ..auth import get_bank_settings, get_db_conn, require_user
+from ..auth import get_db_conn, require_onboarded, require_user
 from ..math.forecast import build
 from ..services import fx
 from ..services.months import add_months, commission_of, current_month_key, fully_closed_months, source_active_in
@@ -43,8 +43,7 @@ def _serialize_row(row, source, projects, commissions_by_project):
     }
 
 
-def build_forecast(conn: sqlite3.Connection, user_id: str, window: int) -> dict:
-    bank = get_bank_settings(conn, user_id)
+def build_forecast(conn: sqlite3.Connection, user_id: str, window: int, bank) -> dict:
     sources = conn.execute(
         "SELECT * FROM income_sources WHERE owner_user_id = ? AND active = 1 ORDER BY created_at",
         (user_id,),
@@ -113,6 +112,7 @@ def build_forecast(conn: sqlite3.Connection, user_id: str, window: int) -> dict:
 def forecast(
     window: int = Query(default=3, ge=1, le=24),
     conn: sqlite3.Connection = Depends(get_db_conn),
+    bank=Depends(require_onboarded),
     user=Depends(require_user),
 ):
-    return build_forecast(conn, user.sub, window)
+    return build_forecast(conn, user.sub, window, bank)

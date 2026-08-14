@@ -80,7 +80,9 @@ export function MonthsScreen() {
               <tr>
                 <th>{t('months.month')}</th>
                 <th>{t('months.srccount', { n: '' }).trim()}</th>
-                <th>{t('months.net')}</th>
+                <th>{t('months.gross')}</th>
+                <th>{t('months.netincome')}</th>
+                <th>{t('months.tax')}</th>
                 <th>{t('months.slip')}</th>
               </tr>
             </thead>
@@ -89,7 +91,9 @@ export function MonthsScreen() {
                 <tr key={m.id}>
                   <td>{monthLabel(m)}</td>
                   <td>{m.sourceCount} · {m.sources.join(', ')}</td>
-                  <td>{fmtM(m.netTotal)}</td>
+                  <td>{fmtGross(m)}</td>
+                  <td>{fmtM(m.bankNet)}</td>
+                  <td>{fmtM(m.tax)}</td>
                   <td>
                     <a className="btn primary" href={api.slipUrl(m.id)} target="_blank" rel="noreferrer">{t('months.slip')}</a>
                   </td>
@@ -107,7 +111,9 @@ export function MonthsScreen() {
               <th>{t('months.month')}</th>
               <th>{t('months.owner')}</th>
               <th>{t('sources.name')}</th>
-              <th>{t('months.net')}</th>
+              <th>{t('months.gross')}</th>
+              <th>{t('months.netincome')}</th>
+              <th>{t('months.tax')}</th>
               <th>{t('months.slip')}</th>
             </tr>
           </thead>
@@ -117,7 +123,9 @@ export function MonthsScreen() {
                 <td>{monthLabel(m)}</td>
                 <td>{m.owner}</td>
                 <td>{m.source} <span className="tag accent">{m.currency}</span></td>
-                <td>{fmtM(m.netAfterTax)}</td>
+                <td>{fmtF(m.grossForeign)} {m.currency}</td>
+                <td>{fmtM(m.bankNet)}</td>
+                <td>{fmtM(m.tax)}</td>
                 <td>
                   <a className="btn primary" href={api.slipUrl(monthKey(m.year, m.monthNum))} target="_blank" rel="noreferrer">{t('months.slip')}</a>
                 </td>
@@ -133,6 +141,14 @@ export function MonthsScreen() {
 function monthKey(year: number, monthNum: number): string {
   return `${year}-${String(monthNum).padStart(2, '0')}`;
 }
+function fmtF(n: number): string {
+  return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+}
 function fmtM(n: number): string {
   return `$ ${n.toLocaleString(undefined, { maximumFractionDigits: 2 })} MXN`;
+}
+function fmtGross(m: { grossByCurrency: Record<string, number> }): string {
+  return Object.entries(m.grossByCurrency)
+    .map(([cur, v]) => `${fmtF(v)} ${cur}`)
+    .join(' · ');
 }

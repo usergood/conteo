@@ -13,7 +13,7 @@ import sqlite3
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
-from ..auth import get_bank_settings, get_db_conn, require_onboarded, require_user
+from ..auth import get_db_conn, require_onboarded, require_user
 from ..math.settlement import derive
 from ..serializers import settlement_dict, source_dict
 from ..services.months import MONTH_RE, commission_of, now_iso
@@ -42,6 +42,7 @@ def _source_form(conn, source, bank):
                 "name": p["name"],
                 "value": p["value"],
                 "commissionForeign": commission_of(source, p),
+                "approval": p["approval"],
             }
             for p in projects
         ],
@@ -52,11 +53,11 @@ def _source_form(conn, source, bank):
 def close_view(
     month: str = Query(...),
     conn: sqlite3.Connection = Depends(get_db_conn),
+    bank=Depends(require_onboarded),
     user=Depends(require_user),
 ):
     if not MONTH_RE.match(month):
         raise HTTPException(status_code=422, detail="invalid_month")
-    bank = get_bank_settings(conn, user.sub)
     sources = conn.execute(
         "SELECT * FROM income_sources WHERE owner_user_id = ? AND active = 1 ORDER BY created_at",
         (user.sub,),
@@ -94,7 +95,6 @@ def close_month(
         raise HTTPException(status_code=422, detail="invalid_month")
     if body.transfers < 1:
         raise HTTPException(status_code=422, detail="invalid_transfers")
-    bank = get_bank_settings(conn, user.sub)
     source = conn.execute(
         "SELECT * FROM income_sources WHERE id = ? AND owner_user_id = ?", (body.sourceId, user.sub)
     ).fetchone()

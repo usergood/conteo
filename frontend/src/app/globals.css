@@ -234,6 +234,7 @@ h3 { font-size: 17px; }
 table.months { width: 100%; border-collapse: collapse; font-size: 14px; }
 table.months th, table.months td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
 table.months th { color: var(--muted); font-weight: 600; font-size: 13px; }
+table.months td .btn { display: inline-block; white-space: nowrap; padding: 7px 14px; }
 
 /* ---------- dark mode: cards lift a step, soft-accent primary ---------- */
 :root[data-theme='dark'] .page-shell .panel,

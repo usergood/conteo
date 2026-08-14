@@ -46,7 +46,13 @@ export function CloseScreen() {
           const next: Record<string, Draft> = {};
           for (const s of v.sources) {
             const p = prev[s.id] ?? { typed: '', transfers: 1, salaryOverride: '', paid: new Set<string>() };
-            next[s.id] = { ...p, paid: new Set(p.paid) };
+            const paid = new Set(p.paid);
+            // A project approved during this month is auto-included at close,
+            // but stays deselectable (ticket: approved-in-month auto-check).
+            for (const prj of s.projects) {
+              if (prj.approval && prj.approval.slice(0, 7) === month) paid.add(prj.id);
+            }
+            next[s.id] = { ...p, paid };
           }
           return next;
         });
@@ -135,6 +141,7 @@ export function CloseScreen() {
                         />{' '}
                         {p.name} — {fmtF(p.value)} {s.currency}
                         {p.commissionForeign > 0 && <span className="meta"> (+{fmtF(p.commissionForeign)} comm)</span>}
+                        {p.approval && p.approval.slice(0, 7) === month && <span className="tag ok">approved</span>}
                       </label>
                     ))}
                   </>

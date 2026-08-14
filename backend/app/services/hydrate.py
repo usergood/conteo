@@ -17,12 +17,15 @@ def _months_mine(conn, user_id):
     rows = []
     for month in closed:
         settlements = conn.execute(
-            "SELECT s.net_after_tax, src.name FROM settlements s "
-            "JOIN income_sources src ON src.id = s.source_id "
+            "SELECT s.net_after_tax, s.typed_mxn, s.tax, s.foreign_paid, src.name, src.currency "
+            "FROM settlements s JOIN income_sources src ON src.id = s.source_id "
             "WHERE s.owner_user_id = ? AND s.month = ?",
             (user_id, month),
         ).fetchall()
         year, month_num = (int(p) for p in month.split("-"))
+        gross: dict = {}
+        for r in settlements:
+            gross[r["currency"]] = gross.get(r["currency"], 0) + r["foreign_paid"]
         rows.append({
             "id": month,
             "year": year,
@@ -30,6 +33,9 @@ def _months_mine(conn, user_id):
             "netTotal": round(sum(r["net_after_tax"] for r in settlements), 2),
             "sourceCount": len(settlements),
             "sources": [r["name"] for r in settlements],
+            "grossByCurrency": {cur: round(v, 2) for cur, v in gross.items()},
+            "bankNet": round(sum(r["typed_mxn"] for r in settlements), 2),
+            "tax": round(sum(r["tax"] for r in settlements), 2),
         })
     return rows
 
@@ -51,7 +57,8 @@ def _months_shared(conn, user_id):
         owner_shares = [sh for sh in shares if sh["owner_user_id"] == owner_id]
         shared_source_ids = {sh["source_id"] for sh in owner_shares}
         settlements = conn.execute(
-            "SELECT s.source_id, s.month, s.net_after_tax, src.name AS source_name, src.currency "
+            "SELECT s.source_id, s.month, s.net_after_tax, s.foreign_paid, s.typed_mxn, s.tax, "
+            "src.name AS source_name, src.currency "
             "FROM settlements s JOIN income_sources src ON src.id = s.source_id "
             "WHERE s.owner_user_id = ?",
             (owner_id,),
@@ -76,6 +83,9 @@ def _months_shared(conn, user_id):
                     "year": year,
                     "monthNum": month_num,
                     "netAfterTax": st["net_after_tax"],
+                    "grossForeign": st["foreign_paid"],
+                    "bankNet": st["typed_mxn"],
+                    "tax": st["tax"],
                 })
     rows.sort(key=lambda r: (r["year"], r["monthNum"]))
     return rows

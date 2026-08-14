@@ -158,6 +158,36 @@ def test_project_inherits_source_currency(client, onboard):
     assert p["sourceId"] == sid
 
 
+def test_close_view_carries_approval_per_project(client, onboard):
+    """The close screen needs each project's approval date to auto-check
+    approved-in-month projects (frontend pre-selects them)."""
+    onboard()
+    sid = client.post("/api/sources", json={"name": "US company", "currency": "USD"}).json()["id"]
+    client.post(f"/api/sources/{sid}/projects", json={
+        "name": "Website", "value": 8000, "assigned": "2026-08-01", "estEnd": "2026-09-12", "approval": "2026-08-05",
+    })
+    client.post(f"/api/sources/{sid}/projects", json={
+        "name": "Other", "value": 1000, "assigned": "2026-08-01", "estEnd": "2026-09-12", "approval": None,
+    })
+    view = client.get("/api/close?month=2026-08").json()
+    proj = {p["name"]: p for p in view["sources"][0]["projects"]}
+    assert proj["Website"]["approval"] == "2026-08-05"
+    assert proj["Other"]["approval"] is None
+
+
+def test_shared_months_carry_gross_and_tax(client, onboard, login):
+    onboard("owner@gmail.com")
+    sid = client.post("/api/sources", json={"name": "US company", "currency": "USD", "fixedSalary": 5000, "commissionMode": "none", "commissionValue": 0}).json()["id"]
+    client.post("/api/shares", json={"sourceId": sid, "email": "wife@gmail.com"})
+    client.post("/api/close", json={"month": "2026-08", "sourceId": sid, "typedMxn": 85000, "transfers": 1, "paidProjectIds": []})
+    login("wife@gmail.com")
+    shared = client.get("/api/months/shared").json()
+    assert len(shared) == 1
+    assert shared[0]["grossForeign"] == pytest.approx(5000)
+    assert shared[0]["bankNet"] == pytest.approx(85000)
+    assert shared[0]["tax"] == pytest.approx(1700)
+
+
 def test_close_month_verified_numbers(client, onboard):
     onboard()
     sid = client.post("/api/sources", json={
@@ -231,6 +261,18 @@ def test_month_closes_and_mine_lists_it(client, onboard):
     assert len(months) == 1
     assert months[0]["monthNum"] == 8
     assert months[0]["netTotal"] == pytest.approx(85000 * 0.98)
+    assert months[0]["grossByCurrency"] == {"USD": pytest.approx(5000)}
+    assert months[0]["bankNet"] == pytest.approx(85000)
+    assert months[0]["tax"] == pytest.approx(1700)
+
+
+def test_forecast_and_close_view_require_bank_settings(client, login):
+    """GET /api/forecast and GET /api/close used to crash with a 500 for a
+    user without bank settings (bank['fixed_fee'] on None). They must return
+    a clean 409 bank_settings_missing instead (ASGI exception fix)."""
+    login()
+    assert client.get("/api/forecast?window=3").status_code == 409
+    assert client.get("/api/close?month=2026-08").status_code == 409
 
 
 def test_sharing_pending_then_activates(client, onboard, login):

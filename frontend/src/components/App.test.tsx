@@ -43,13 +43,17 @@ describe('App language selector (ticket 8)', () => {
 
   it('applies the server default when nothing is stored', async () => {
     render(<App />);
-    expect(await screen.findByRole('button', { name: 'Español' })).toHaveTextContent('🇪🇸 ES');
+    const trigger = await screen.findByRole('button', { name: 'Español' });
+    expect(trigger).toHaveTextContent('ES');
+    expect(trigger.querySelector('svg.langsel-flag')).not.toBeNull();
   });
 
   it('localStorage pick wins over the server default', async () => {
     window.localStorage.setItem('conteo-language', 'en');
     render(<App />);
-    expect(await screen.findByRole('button', { name: 'English' })).toHaveTextContent('🇬🇧 EN');
+    const trigger = await screen.findByRole('button', { name: 'English' });
+    expect(trigger).toHaveTextContent('EN');
+    expect(trigger.querySelector('svg.langsel-flag')).not.toBeNull();
   });
 
   it('an anonymous pick updates the trigger immediately and persists to localStorage', async () => {
@@ -57,7 +61,11 @@ describe('App language selector (ticket 8)', () => {
     const trigger = await screen.findByRole('button', { name: 'Español' });
     fireEvent.click(trigger);
     fireEvent.click(await screen.findByRole('button', { name: 'English' }));
-    await waitFor(() => expect(screen.getByRole('button', { name: 'English' })).toHaveTextContent('🇬🇧 EN'));
+    await waitFor(() => {
+      const t = screen.getByRole('button', { name: 'English' });
+      expect(t).toHaveTextContent('EN');
+      expect(t.querySelector('svg.langsel-flag')).not.toBeNull();
+    });
     expect(window.localStorage.getItem('conteo-language')).toBe('en');
   });
 

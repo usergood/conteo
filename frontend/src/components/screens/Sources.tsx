@@ -120,8 +120,14 @@ function ProjectView({ source, onBack }: { source: IncomeSource; onBack: () => v
   const { t } = useI18n();
   const { state, reload, notify } = useApp();
   const [adding, setAdding] = useState(false);
+  const [editingSource, setEditingSource] = useState(false);
+  const [editingProject, setEditingProject] = useState<Project | null>(null);
   const projects = state.projects.filter((p) => p.sourceId === source.id);
   const rateMxn = state.fx?.rates[source.currency] ?? null;
+
+  if (editingSource) {
+    return <SourceForm initial={source} onDone={() => { setEditingSource(false); reload(); }} />;
+  }
 
   const remove = async (p: Project) => {
     try {
@@ -167,7 +173,7 @@ function ProjectView({ source, onBack }: { source: IncomeSource; onBack: () => v
           ) : (
             <span className="tag warn">inactive</span>
           )}
-          <button className="iconbtn" onClick={() => notify('source.edit')}>{t('sources.edit')}</button>
+          <button className="iconbtn" onClick={() => setEditingSource(true)}>{t('sources.edit')}</button>
           {!source.active && <button className="iconbtn" onClick={removeSource}>✕ {t('sources.delete')}</button>}
         </div>
       </div>
@@ -196,7 +202,12 @@ function ProjectView({ source, onBack }: { source: IncomeSource; onBack: () => v
               <h3>{p.name}</h3>
               <div className="btns">
                 {p.approval ? <span className="tag ok">{t('proj.approved', { d: p.approval })}</span> : <span className="tag warn">{t('proj.not')}</span>}
-                {!p.settledMonth && <button className="iconbtn" onClick={() => remove(p)}>✕</button>}
+                {!p.settledMonth && (
+                  <>
+                    <button className="iconbtn" onClick={() => setEditingProject(p)}>{t('sources.edit')}</button>
+                    <button className="iconbtn" onClick={() => remove(p)}>✕</button>
+                  </>
+                )}
               </div>
             </div>
             <p className="meta">
@@ -207,6 +218,16 @@ function ProjectView({ source, onBack }: { source: IncomeSource; onBack: () => v
                 ? t('proj.comm', { v: `${fmtF(comm)} ${source.currency}`, m: rateMxn ? fmtF(comm * rateMxn) : '—' })
                 : t('proj.comm.none')}
             </p>
+            {editingProject?.id === p.id && (
+              <div style={{ marginTop: 12 }}>
+                <ProjectForm
+                  source={source}
+                  initial={p}
+                  onDone={() => { setEditingProject(null); reload(); }}
+                  onCancel={() => setEditingProject(null)}
+                />
+              </div>
+            )}
           </div>
         );
       })}
@@ -219,18 +240,18 @@ function ProjectView({ source, onBack }: { source: IncomeSource; onBack: () => v
   );
 }
 
-function ProjectForm({ source, onDone, onCancel }: { source: IncomeSource; onDone: () => void; onCancel: () => void }) {
+function ProjectForm({ source, initial, onDone, onCancel }: { source: IncomeSource; initial?: Project; onDone: () => void; onCancel: () => void }) {
   const { t } = useI18n();
   const ref = useRef<SaveHandle>(null);
 
   return (
     <div className="panel" style={{ marginTop: 12 }}>
-      <h3>{t('proj.title')}</h3>
+      <h3>{initial ? `${t('sources.edit')} — ${initial.name}` : t('proj.title')}</h3>
       <p className="meta">{t('proj.sub', { cur: source.currency })}</p>
-      <ProjectFields ref={ref} source={source} />
+      <ProjectFields ref={ref} source={source} initial={initial} />
       <div className="btns">
         <button className="btn" onClick={onCancel}>{t('proj.cancel')}</button>
-        <button className="btn primary" onClick={async () => { if (await ref.current?.save()) onDone(); }}>{t('proj.save')}</button>
+        <button className="btn primary" onClick={async () => { if (await ref.current?.save()) onDone(); }}>{initial ? t('proj.save.changes') : t('proj.save')}</button>
       </div>
     </div>
   );

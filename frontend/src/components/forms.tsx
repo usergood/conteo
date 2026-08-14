@@ -3,7 +3,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
 import { api } from '@/lib/api';
 import { useI18n } from '@/lib/i18n';
-import type { BankSettings, IncomeSource } from '@/state/types';
+import type { BankSettings, IncomeSource, Project } from '@/state/types';
 import { useApp } from '@/components/App';
 
 export interface SaveHandle {
@@ -164,63 +164,69 @@ export const SourceFields = forwardRef<SaveHandle, { initial?: IncomeSource }>(f
   );
 });
 
-export const ProjectFields = forwardRef<SaveHandle, { source: IncomeSource }>(function ProjectFields(
-  { source },
-  ref,
-) {
-  const { t } = useI18n();
-  const { notify, dispatch } = useApp();
-  const [name, setName] = useState('');
-  const [value, setValue] = useState('');
-  const [assigned, setAssigned] = useState(new Date().toISOString().slice(0, 10));
-  const [end, setEnd] = useState(addWeeks(new Date().toISOString().slice(0, 10), 6));
-  const [approval, setApproval] = useState('');
-  const [err, setErr] = useState('');
+export const ProjectFields = forwardRef<SaveHandle, { source: IncomeSource; initial?: Project }>(
+  function ProjectFields({ source, initial }, ref) {
+    const { t } = useI18n();
+    const { notify, dispatch } = useApp();
+    const isEdit = !!initial;
+    const [name, setName] = useState(initial?.name ?? '');
+    const [value, setValue] = useState(initial ? String(initial.value) : '');
+    const [assigned, setAssigned] = useState(initial?.assigned ?? new Date().toISOString().slice(0, 10));
+    const [end, setEnd] = useState(initial?.estEnd ?? addWeeks(new Date().toISOString().slice(0, 10), 6));
+    const [approval, setApproval] = useState(initial?.approval ?? '');
+    const [err, setErr] = useState('');
 
-  useImperativeHandle(ref, () => ({
-    save: async () => {
-      setErr('');
-      try {
-        const created = await api.createProject(source.id, {
-          name: name.trim() || 'Project',
-          value: Number(value) || 0,
-          assigned,
-          estEnd: end,
-          approval: approval || null,
-        });
-        dispatch({ type: 'ADD_PROJECT', project: created });
-        notify(t('proj.save'));
-        return true;
-      } catch (e) {
-        setErr(e instanceof Error ? e.message : String(e));
-        return false;
-      }
-    },
-  }));
+    useImperativeHandle(ref, () => ({
+      save: async () => {
+        setErr('');
+        try {
+          const body = {
+            name: name.trim() || 'Project',
+            value: Number(value) || 0,
+            assigned,
+            estEnd: end,
+            approval: approval || null,
+          };
+          if (isEdit && initial) {
+            const updated = await api.updateProject(initial.id, body);
+            dispatch({ type: 'EDIT_PROJECT', project: updated });
+          } else {
+            const created = await api.createProject(source.id, body);
+            dispatch({ type: 'ADD_PROJECT', project: created });
+          }
+          notify(isEdit ? t('proj.save.changes') : t('proj.save'));
+          return true;
+        } catch (e) {
+          setErr(e instanceof Error ? e.message : String(e));
+          return false;
+        }
+      },
+    }));
 
-  return (
-    <>
-      <div className="field">
-        <label>{t('proj.name')}</label>
-        <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Website redesign" />
-      </div>
-      <div className="field">
-        <label>{t('proj.value')} ({source.currency})</label>
-        <input type="number" step="any" value={value} onChange={(e) => setValue(e.target.value)} />
-      </div>
-      <div className="field">
-        <label>{t('proj.assigned')}</label>
-        <input type="date" value={assigned} onChange={(e) => setAssigned(e.target.value)} />
-      </div>
-      <div className="field">
-        <label>{t('proj.end')}</label>
-        <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
-      </div>
-      <div className="field">
-        <label>{t('proj.approval')}</label>
-        <input type="date" value={approval} onChange={(e) => setApproval(e.target.value)} />
-      </div>
-      {err && <div className="error">{err}</div>}
-    </>
-  );
-});
+    return (
+      <>
+        <div className="field">
+          <label>{t('proj.name')}</label>
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Website redesign" />
+        </div>
+        <div className="field">
+          <label>{t('proj.value')} ({source.currency})</label>
+          <input type="number" step="any" value={value} onChange={(e) => setValue(e.target.value)} />
+        </div>
+        <div className="field">
+          <label>{t('proj.assigned')}</label>
+          <input type="date" value={assigned} onChange={(e) => setAssigned(e.target.value)} />
+        </div>
+        <div className="field">
+          <label>{t('proj.end')}</label>
+          <input type="date" value={end} onChange={(e) => setEnd(e.target.value)} />
+        </div>
+        <div className="field">
+          <label>{t('proj.approval')}</label>
+          <input type="date" value={approval} onChange={(e) => setApproval(e.target.value)} />
+        </div>
+        {err && <div className="error">{err}</div>}
+      </>
+    );
+  },
+);

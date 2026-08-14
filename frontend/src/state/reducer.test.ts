@@ -19,12 +19,12 @@ function seeded(): AppState {
       sharesByMe: [],
       sharesWithMe: [],
       months: [
-        { id: 'm-jun', year: 2026, monthNum: 6, netTotal: 91480.25, sourceCount: 1, sources: ['US company'] },
-        { id: 'm-jul', year: 2026, monthNum: 7, netTotal: 107263.8, sourceCount: 1, sources: ['US company'] },
+        { id: 'm-jun', year: 2026, monthNum: 6, netTotal: 91480.25, sourceCount: 1, sources: ['US company'], grossByCurrency: { USD: 5800 }, bankNet: 89505, tax: 1790.1 },
+        { id: 'm-jul', year: 2026, monthNum: 7, netTotal: 107263.8, sourceCount: 1, sources: ['US company'], grossByCurrency: { USD: 6800 }, bankNet: 104900, tax: 2098 },
       ],
       sharedMonths: [
-        { id: 'sm1', owner: 'alex@gmail.com', source: 'Sketchy Studio', currency: 'USD', year: 2026, monthNum: 5, netAfterTax: 81250 },
-        { id: 'sm2', owner: 'alex@gmail.com', source: 'Sketchy Studio', currency: 'USD', year: 2026, monthNum: 6, netAfterTax: 64230.75 },
+        { id: 'sm1', owner: 'alex@gmail.com', source: 'Sketchy Studio', currency: 'USD', year: 2026, monthNum: 5, netAfterTax: 81250, grossForeign: 5500, bankNet: 82900, tax: 1658 },
+        { id: 'sm2', owner: 'alex@gmail.com', source: 'Sketchy Studio', currency: 'USD', year: 2026, monthNum: 6, netAfterTax: 64230.75, grossForeign: 4400, bankNet: 65540, tax: 1310.8 },
       ],
       fx: { base: 'USD', rates: { USD: 1, MXN: 17.06, SEK: 9.56 }, fetchedAt: '2026-08-13T10:00:00Z', stale: false },
     },
@@ -88,6 +88,12 @@ describe('appReducer', () => {
     expect(s.commissionMode).toBe('flat');
   });
 
+  it('EDIT_PROJECT updates in place', () => {
+    const state = reducer(seeded(), { type: 'EDIT_PROJECT', project: { id: 'p1', sourceId: 's1', name: 'Website redesign', value: 8000, assigned: '2026-08-01', estEnd: '2026-09-12', approval: '2026-08-05', settledMonth: null } });
+    const p = state.projects.find((x) => x.id === 'p1')!;
+    expect(p.approval).toBe('2026-08-05');
+  });
+
   it('CLOSE_MONTH appends a settlement', () => {
     const state = reducer(seeded(), { type: 'CLOSE_MONTH', settlement: {
       id: 'st1', sourceId: 's1', month: '2026-08', typedMxn: 86500, transfers: 1,
@@ -140,11 +146,39 @@ describe('myClosedMonths', () => {
     expect(months[2].netTotal).toBe(84770);
     expect(months[2].sourceCount).toBe(2);
     expect(months[2].sources).toEqual(['US company', 'Swedish co']);
+    expect(months[2].grossByCurrency).toEqual({ USD: 5800, SEK: 0 });
+    expect(months[2].bankNet).toBe(86500);
+    expect(months[2].tax).toBe(1730);
   });
 
   it('does not append the current month while a source is still open', () => {
     const months = myClosedMonths(seeded(), 2026, 8);
     expect(months.map((m) => m.monthNum)).toEqual([6, 7]);
+  });
+
+  it('does not duplicate the current month when the backend already lists it (slip invalid_month fix)', () => {
+    const withBackend = reducer(seeded(), { type: 'HYDRATE', payload: {
+      user: { sub: 'u1', email: 'you@example.com', displayName: 'You', avatarUrl: null, language: 'en', guideStatus: 'done' },
+      bank: seeded().bank,
+      sources: seeded().sources,
+      projects: seeded().projects,
+      settlements: [
+        { id: 'st1', sourceId: 's1', month: '2026-08', typedMxn: 86500, transfers: 1, fixedSalaryForeign: 5000, commissionForeign: 800, foreignPaid: 5800, grossMxn: 89505, derivedRate: 15.4319, tax: 1730, netAfterTax: 84770, paidProjectIds: ['p1'], commissionBreakdown: [{ id: 'p1', name: 'Website redesign', commissionForeign: 800 }] },
+        { id: 'st2', sourceId: 's2', month: '2026-08', typedMxn: 0, transfers: 1, fixedSalaryForeign: 0, commissionForeign: 0, foreignPaid: 0, grossMxn: null, derivedRate: null, tax: 0, netAfterTax: 0, paidProjectIds: [], commissionBreakdown: [] },
+      ],
+      sharesByMe: [],
+      sharesWithMe: [],
+      months: [
+        { id: 'm-jun', year: 2026, monthNum: 6, netTotal: 91480.25, sourceCount: 1, sources: ['US company'], grossByCurrency: { USD: 5800 }, bankNet: 89505, tax: 1790.1 },
+        { id: 'm-jul', year: 2026, monthNum: 7, netTotal: 107263.8, sourceCount: 1, sources: ['US company'], grossByCurrency: { USD: 6800 }, bankNet: 104900, tax: 2098 },
+        { id: '2026-08', year: 2026, monthNum: 8, netTotal: 84770, sourceCount: 2, sources: ['US company', 'Swedish co'], grossByCurrency: { USD: 5800, SEK: 0 }, bankNet: 86500, tax: 1730 },
+      ],
+      sharedMonths: [],
+      fx: seeded().fx,
+    } });
+    const months = myClosedMonths(withBackend, 2026, 8);
+    expect(months.filter((m) => m.monthNum === 8)).toHaveLength(1);
+    expect(months[2].id).toBe('2026-08');
   });
 });
 
