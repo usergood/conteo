@@ -1,12 +1,22 @@
-# Conteo
+<p align="center">
+  <img src="frontend/public/conteo.svg" width="120" alt="Conteo logo">
+</p>
+
+<h1 align="center">Conteo</h1>
 
 A self-hosted multi-user income tracker for an IT consultant with customers or employers in different countries: track each income source (fixed salary + linked projects, each in its own currency), forecast expected income with live FX, record the final income that lands in the bank each month, and produce PDF salary slips — all the data you need when doing taxes.
 
+The app logo lives in one canonical place — `frontend/public/conteo.svg` — and is reused as the favicon, the in-app header/login mark, and on the exported PDF salary slips (`frontend/public/conteo.png` is a raster derived from it for PDF embedding).
+
 - **Stack**: Python FastAPI backend, Next.js/React frontend, SQLite storage, Docker.
-- **Auth**: Google Sign-In only (dev-login bypass available for testing).
+- **Auth**: Google Sign-In (optional — a dev-login bypass covers local/DEV runs without any Google setup).
 - **Deploy**: single container behind a Cloudflare Tunnel.
 
 This guide walks a fresh instance from zero to running. It assumes a Linux host with Docker, and a domain you can point DNS at.
+
+> **Pick your host up front.** Every deployment must set its own public address via `APP_BASE_URL`; nothing is hard-coded to a specific domain. If you don't have (or don't want) a public host and Google auth, skip straight to [Dev / test mode](#dev--test-mode) — the app runs fully locally with `AUTH_MODE=dev`, no domain or OAuth client required.
+
+> Owners: your personal, filled-in copy of this guide (real host, tunnel and OAuth credentials) lives in the git-ignored `LOCAL_SETUP.md`.
 
 ## Architecture
 
@@ -28,22 +38,22 @@ These steps are done by you, on your own accounts; nothing in the app can do the
 
 ### 1. Create the Cloudflare Tunnel
 
-Create a named tunnel for `conteo.glappet.eu` and get its credentials token. cloudflared runs on the host (see below) and points at the app's web port.
+Create a named tunnel for your public hostname (e.g. `conteo.YOUR_DOMAIN`) and get its credentials token. cloudflared runs on the host (see below) and points at the app's web port.
 
 ### 2. DNS
 
 Add a proxied CNAME on your zone:
 
 ```
-conteo.glappet.eu  CNAME  <tunnel-uuid>.cfargotunnel.com  (proxied)
+conteo.YOUR_DOMAIN  CNAME  <tunnel-uuid>.cfargotunnel.com  (proxied)
 ```
 
 ### 3. Google OAuth client
 
 Create an OAuth client at <https://console.cloud.google.com/apis/credentials>:
 
-- Authorized JavaScript origin: `https://conteo.glappet.eu`
-- Redirect URI: `https://conteo.glappet.eu/api/auth/callback`
+- Authorized JavaScript origin: `https://conteo.YOUR_DOMAIN`
+- Redirect URI: `https://conteo.YOUR_DOMAIN/api/auth/callback`
 
 Take note of the Client ID and Client Secret.
 
@@ -74,7 +84,7 @@ docker run -d \
   -e GOOGLE_CLIENT_ID=<client-id> \
   -e GOOGLE_CLIENT_SECRET=<client-secret> \
   -e SESSION_SECRET=<random> \
-  -e APP_BASE_URL=https://conteo.glappet.eu \
+  -e APP_BASE_URL=https://conteo.YOUR_DOMAIN \
   -e WEB_PORT=3000 \
   conteo:latest
 ```
@@ -88,7 +98,7 @@ docker run -d \
 | `GOOGLE_CLIENT_ID` | yes (google) | — | Google OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | yes (google) | — | Google OAuth client secret |
 | `SESSION_SECRET` | yes | — | Secret for signing session cookies |
-| `APP_BASE_URL` | yes | — | Public address, e.g. `https://conteo.glappet.eu`; drives redirect URIs / absolute links |
+| `APP_BASE_URL` | yes | — | Public address of *your* instance, e.g. `https://conteo.YOUR_DOMAIN`; drives redirect URIs / absolute links. Must match your own host — nothing is hard-coded |
 | `WEB_PORT` | no | `3000` | Host-facing web port (bound to 127.0.0.1) |
 
 Only the web port is published, bound to `127.0.0.1`; FastAPI is never directly reachable. TLS terminates at Cloudflare; the origin is plain HTTP.
@@ -107,9 +117,9 @@ Or, with a named tunnel and the credentials file from step 1:
 cloudflared tunnel --name conteo run
 ```
 
-## Dev / test mode
+## Dev / test mode (no host, no Google auth)
 
-Before the tunnel and Google OAuth client exist, the app is fully usable with the dev-login bypass:
+Before a public host and Google OAuth client exist — or for any local run — the app is fully usable with the dev-login bypass. No domain, tunnel, or OAuth client is required; just set `AUTH_MODE=dev` and your own `DEV_AUTH_TOKEN`:
 
 ```bash
 docker run -d \
@@ -127,7 +137,7 @@ The dev-login screen takes the token plus an email, auto-creates the user if mis
 
 ## Open-source portability
 
-Everything host-specific is an environment variable (see table above); nothing is hardcoded. `config.yaml` holds only non-secret seed defaults. This keeps the project safe to open-source — running it elsewhere is just a different set of env vars.
+Everything host-specific is an environment variable (see table above); nothing is hard-coded. `config.yaml` holds only non-secret seed defaults. Each deployer supplies their own `APP_BASE_URL` (their host) or runs `AUTH_MODE=dev` locally without any host or Google setup. This keeps the project safe to open-source — running it elsewhere is just a different set of env vars.
 
 ## Backups
 

@@ -41,9 +41,9 @@ export function LoginScreen() {
 
   return (
     <div className="panel">
-      <div className="empty">
-        <div className="big">⚙️</div>
-        <h3>{t('login.title')}</h3>
+<div className="empty">
+          <img src="/conteo.svg" className="login-logo" alt="Conteo" />
+          <h3>{t('login.title')}</h3>
         {config?.authMode === 'google' ? (
           <>
             <p className="meta">Google Sign-In · scopes: openid email profile</p>

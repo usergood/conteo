@@ -20,6 +20,9 @@ data/
 .env
 .env.local
 
+# Private, instance-specific install guide (contains real host + credentials)
+LOCAL_SETUP.md
+
 # Editors
 .vscode/
 .idea/

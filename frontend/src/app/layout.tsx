@@ -4,6 +4,10 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Conteo',
   description: 'Conteo — multi-currency income tracker and forecaster',
+  icons: {
+    icon: '/conteo.svg',
+    apple: '/conteo.png',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

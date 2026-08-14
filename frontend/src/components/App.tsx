@@ -94,6 +94,7 @@ export function App() {
     <AppContext.Provider value={{ state, dispatch, reload, notify }}>
       <I18nContext.Provider value={tValue}>
         <header className="appbar">
+          <img src="/conteo.svg" className="logo" alt="Conteo" />
           <div>
             <div className="title">{tValue.t('app.title')}</div>
             {state.user && <div className="who">{state.user.email}</div>}

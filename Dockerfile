@@ -30,9 +30,10 @@ RUN python -m venv /app/venv && /app/venv/bin/pip install --no-cache-dir -r back
 
 COPY backend/ ./backend/
 
-# Next standalone bundle: server.js + .next/static
+# Next standalone bundle: server.js + .next/static + public/ (logo, favicon)
 COPY --from=web-build /build/.next/standalone/ ./frontend/
 COPY --from=web-build /build/.next/static/ ./frontend/.next/static/
+COPY --from=web-build /build/public ./frontend/public/
 
 COPY deploy/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

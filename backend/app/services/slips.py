@@ -9,10 +9,22 @@ the foot, per-source derived rates listed.
 
 from pathlib import Path
 
+import base64
+
 from jinja2 import Environment, FileSystemLoader
 from weasyprint import HTML
 
 TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "templates"
+
+
+def _logo_data_uri() -> str:
+    """Conteo logo as a data URI for embedding in the PDF (one canonical
+    SVG lives in frontend/public; the PNG raster is derived for WeasyPrint)."""
+    path = Path(__file__).resolve().parents[3] / "frontend" / "public" / "conteo.png"
+    if not path.exists():
+        return ""
+    b64 = base64.b64encode(path.read_bytes()).decode("ascii")
+    return f"data:image/png;base64,{b64}"
 
 
 def _fmt_mxn(value) -> str:
@@ -33,6 +45,7 @@ def build_slip_data(month: str, user: dict, bank: dict, sections: list[dict], ge
     month_label = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][month_num - 1]
     return {
         "appName": "Conteo",
+        "logoDataUri": _logo_data_uri(),
         "monthLabel": f"{month_label} {year}",
         "userName": user["displayName"],
         "userEmail": user["email"],

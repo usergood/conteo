@@ -52,6 +52,7 @@ main.app { max-width: 1180px; margin: 0 auto; padding: 32px 20px 80px; }
   color: var(--appbar-ink);
   padding: 12px 20px;
 }
+.appbar .logo { width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0; }
 .appbar .title { font-weight: 700; font-size: 18px; }
 .appbar .who { font-size: 13px; opacity: 0.8; }
 .spacer { flex: 1; }
@@ -143,6 +144,7 @@ h3 { font-size: 17px; }
 .tag.warn { color: var(--warn); border-color: var(--warn); background: var(--warn-soft); }
 .empty { text-align: center; padding: 48px 20px; }
 .empty .big { font-size: 30px; margin-bottom: 8px; }
+.login-logo { width: 72px; height: 72px; border-radius: 18px; margin-bottom: 12px; }
 .error { color: var(--warn); background: var(--warn-soft); border: 1px solid var(--warn); border-radius: 8px; padding: 10px 14px; font-size: 14px; margin-bottom: 14px; }
 
 table.months { width: 100%; border-collapse: collapse; font-size: 14px; }
