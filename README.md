@@ -75,10 +75,17 @@ EOF
 
 ## Run
 
-Published images are pulled from **GHCR** (a local `docker build` is not needed).
-Always pin a `vX.Y.Z` tag for production so you know exactly which version is
-running; see [RELEASING.md](RELEASING.md) for the release ritual and how to
-update a deployed instance.
+Published images are pulled from the **GitHub Container Registry (GHCR)** — a
+local `docker build` is not needed. Always pin a `vX.Y.Z` tag for production so
+you know exactly which version is running; see [RELEASING.md](RELEASING.md) for
+the release ritual and how to update a deployed instance.
+
+Pull the image, then run it (use `latest` for the newest build, or pin an exact
+version like `v0.1.0`):
+
+```bash
+docker pull ghcr.io/usergood/conteo:v0.1.0
+```
 
 ```bash
 docker run -d \
