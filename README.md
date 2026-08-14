@@ -1,8 +1,9 @@
 <p align="center">
   <img src="frontend/public/conteo.svg" width="120" alt="Conteo logo">
 </p>
-
-<h1 align="center">Conteo<br><small><em>Spanish for "counting"</em> — a self-hosted income tracker that counts, forecasts, and settles every income source in your own currency.</small></h1>
+<h1 align="center">Conteo</h1>
+<p align="center"><em>Spanish for "counting"</em> — a self-hosted income tracker that counts, forecasts, and settles every income source in your own currency.</p>
+<h1 align="center">&nbsp;</h1>
 
 A self-hosted multi-user income tracker for an IT consultant with customers or employers in different countries: track each income source (fixed salary + linked projects, each in its own currency), forecast expected income with live FX, record the final income that lands in the bank each month, and produce PDF salary slips — all the data you need when doing taxes.
 
