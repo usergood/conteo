@@ -1,0 +1,21 @@
+# Git
+.git/
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/*.tsbuildinfo
+
+# Python
+backend/.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Runtime data
+data/
+
+# Env / secrets / private
+.env
+.env.local
+LOCAL_SETUP.md
