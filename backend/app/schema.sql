@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
   display_name  TEXT NOT NULL,
   avatar_url    TEXT,
   language      TEXT NOT NULL DEFAULT 'en',
+  guide_status  TEXT,
   created_at    TEXT NOT NULL,
   last_login_at TEXT
 );

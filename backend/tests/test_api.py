@@ -39,6 +39,76 @@ def test_onboarding_gate_bank_settings(client, login):
     assert client.post("/api/sources", json={"name": "US company", "currency": "USD"}).status_code == 409
 
 
+def test_new_user_hydrates_guide_status_pending(client, login):
+    """Ticket 07: a brand-new user starts with guide_status = 'pending'."""
+    login()
+    payload = client.get("/api/auth/me").json()
+    assert payload["user"]["guideStatus"] == "pending"
+
+
+def test_guide_status_endpoint_writes_done_and_skipped(client, login):
+    """Ticket 07: PUT /api/settings/guide-status persists done/skipped."""
+    login()
+    assert client.put("/api/settings/guide-status", json={"guideStatus": "done"}).json() == {"guideStatus": "done"}
+    assert client.get("/api/auth/me").json()["user"]["guideStatus"] == "done"
+    assert client.put("/api/settings/guide-status", json={"guideStatus": "skipped"}).json() == {"guideStatus": "skipped"}
+    assert client.get("/api/auth/me").json()["user"]["guideStatus"] == "skipped"
+
+
+def test_guide_status_rejects_pending_and_unknown(client, login):
+    """Ticket 07: the API only ever moves the flag forward to skipped/done."""
+    login()
+    assert client.put("/api/settings/guide-status", json={"guideStatus": "pending"}).status_code == 422
+    assert client.put("/api/settings/guide-status", json={"guideStatus": "wat"}).status_code == 422
+
+
+def test_guide_status_migration_backfills_existing_bank_users():
+    """Ticket 07: guarded migration adds users.guide_status and backfills
+    'done' where a bank_settings row exists, 'pending' otherwise. Idempotent."""
+    import sqlite3
+    from app.db import migrate_guide_status
+
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.executescript(
+        """
+        CREATE TABLE users (
+          sub TEXT PRIMARY KEY, email TEXT NOT NULL, display_name TEXT NOT NULL,
+          avatar_url TEXT, language TEXT NOT NULL DEFAULT 'en',
+          created_at TEXT NOT NULL, last_login_at TEXT
+        );
+        CREATE TABLE bank_settings (
+          owner_user_id TEXT PRIMARY KEY, currency TEXT NOT NULL DEFAULT 'MXN',
+          fixed_fee REAL NOT NULL DEFAULT 320, conv_pct REAL NOT NULL DEFAULT 0,
+          tax_pct REAL NOT NULL DEFAULT 2, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+        );
+        """
+    )
+    conn.execute("INSERT INTO users (sub,email,display_name,avatar_url,language,created_at,last_login_at) VALUES ('u1','a@b.c','A',NULL,'en','n','n')")
+    conn.execute("INSERT INTO users (sub,email,display_name,avatar_url,language,created_at,last_login_at) VALUES ('u2','c@d.e','C',NULL,'en','n','n')")
+    conn.execute("INSERT INTO bank_settings (owner_user_id,currency,fixed_fee,conv_pct,tax_pct,created_at,updated_at) VALUES ('u1','MXN',320,3,2,'n','n')")
+    conn.commit()
+
+    migrate_guide_status(conn)
+    by_sub = {r["sub"]: r["guide_status"] for r in conn.execute("SELECT sub,guide_status FROM users").fetchall()}
+    assert by_sub == {"u1": "done", "u2": "pending"}
+
+    # A later bank user who pre-dates a re-run also lands on 'done'.
+    conn.execute("INSERT INTO users (sub,email,display_name,avatar_url,language,created_at,last_login_at) VALUES ('u3','f@g.h','F',NULL,'en','n','n')")
+    conn.execute("INSERT INTO bank_settings (owner_user_id,currency,fixed_fee,conv_pct,tax_pct,created_at,updated_at) VALUES ('u3','MXN',320,3,2,'n','n')")
+    conn.commit()
+    migrate_guide_status(conn)
+    by_sub = {r["sub"]: r["guide_status"] for r in conn.execute("SELECT sub,guide_status FROM users").fetchall()}
+    assert by_sub == {"u1": "done", "u2": "pending", "u3": "done"}
+
+    # An explicit skipped choice is never overridden by a re-run, even with a bank row.
+    conn.execute("UPDATE users SET guide_status = 'skipped' WHERE sub = 'u3'")
+    conn.commit()
+    migrate_guide_status(conn)
+    u3 = conn.execute("SELECT guide_status FROM users WHERE sub = 'u3'").fetchone()["guide_status"]
+    assert u3 == "skipped"
+
+
 def test_save_bank_and_hydrate(client, login):
     login()
     r = client.put("/api/settings/bank", json={"fixedFee": 320, "convPct": 3, "taxPct": 2})

@@ -16,8 +16,9 @@ function commissionOf(source: IncomeSource, project: Project): number {
 
 export function SourcesScreen() {
   const { t } = useI18n();
-  const { state, reload } = useApp();
+  const { state, reload, dispatch } = useApp();
   const [view, setView] = useState<View>({ kind: 'list' });
+  const noBank = state.bank === null;
 
   if (view.kind === 'form') {
     return <SourceForm initial={view.source} onDone={() => { setView({ kind: 'list' }); reload(); }} />;
@@ -26,14 +27,37 @@ export function SourcesScreen() {
     return <ProjectView source={view.source} onBack={() => setView({ kind: 'list' })} />;
   }
 
+  const openAdd = () => {
+    if (noBank) {
+      dispatch({ type: 'SET_SCREEN', screen: 'settings' });
+      return;
+    }
+    setView({ kind: 'form' });
+  };
+
+  const bankBanner = noBank && (
+    <div className="panel">
+      <div className="headrow">
+        <div>
+          <h3>{t('settings.title.new')}</h3>
+          <p className="meta">{t('sources.bank.missing')}</p>
+        </div>
+        <button className="btn primary" onClick={() => dispatch({ type: 'SET_SCREEN', screen: 'settings' })}>{t('settings.save.cont')}</button>
+      </div>
+    </div>
+  );
+
   if (state.sources.length === 0) {
     return (
-      <div className="panel">
-        <div className="empty">
-          <div className="big">🏷️</div>
-          <h3>{t('sources.empty.title')}</h3>
-          <p className="meta">{t('sources.empty.sub')}</p>
-          <button className="btn primary" onClick={() => setView({ kind: 'form' })}>{t('sources.add')}</button>
+      <div>
+        {bankBanner}
+        <div className="panel">
+          <div className="empty">
+            <div className="big">🏷️</div>
+            <h3>{t('sources.empty.title')}</h3>
+            <p className="meta">{t('sources.empty.sub')}</p>
+            <button className="btn primary" onClick={openAdd}>{t('sources.add')}</button>
+          </div>
         </div>
       </div>
     );
@@ -41,6 +65,7 @@ export function SourcesScreen() {
 
   return (
     <div>
+      {bankBanner}
       {state.sources.map((s) => (
         <div key={s.id} className="card" onClick={() => setView({ kind: 'project', source: s })}>
           <div className="headrow">
@@ -65,7 +90,7 @@ export function SourcesScreen() {
           <p className="meta">{state.projects.filter((p) => p.sourceId === s.id).length} {t('sources.projects')}</p>
         </div>
       ))}
-      <button className="btn" style={{ width: '100%' }} onClick={() => setView({ kind: 'form' })}>+ {t('sources.add')}</button>
+      <button className="btn" style={{ width: '100%' }} onClick={openAdd}>+ {t('sources.add')}</button>
     </div>
   );
 }

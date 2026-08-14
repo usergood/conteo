@@ -9,12 +9,15 @@ export type Screen =
 
 export type Language = 'en' | 'es';
 
+export type GuideStatus = 'pending' | 'skipped' | 'done';
+
 export interface User {
   sub: string;
   email: string;
   displayName: string;
   avatarUrl: string | null;
   language: Language;
+  guideStatus: GuideStatus;
 }
 
 export interface BankSettings {

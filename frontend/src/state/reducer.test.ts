@@ -6,7 +6,7 @@ function seeded(): AppState {
   return reducer(initialState, {
     type: 'HYDRATE',
     payload: {
-      user: { sub: 'u1', email: 'you@example.com', displayName: 'You', avatarUrl: null, language: 'en' },
+      user: { sub: 'u1', email: 'you@example.com', displayName: 'You', avatarUrl: null, language: 'en', guideStatus: 'done' },
       bank: { currency: 'MXN', fixedFee: 320, convPct: 3, taxPct: 2 },
       sources: [
         { id: 's1', name: 'US company', currency: 'USD', fixedSalary: 5000, commissionMode: 'pct', commissionValue: 10, active: true },
@@ -32,16 +32,31 @@ function seeded(): AppState {
 }
 
 describe('appReducer', () => {
-  it('onboarding is data-detected: no bank row locks the app to settings', () => {
-    const anon = reducer(initialState, { type: 'LOGIN_SUCCESS', user: { sub: 'u1', email: 'you@example.com', displayName: 'You', avatarUrl: null, language: 'en' } });
-    expect(isLocked(anon)).toBe(true);
-    expect(anon.screen).toBe('settings');
+  it('guide is locked only while guide_status is pending, independent of bank', () => {
+    const pendingNoBank = reducer(initialState, { type: 'LOGIN_SUCCESS', user: { sub: 'u1', email: 'you@example.com', displayName: 'You', avatarUrl: null, language: 'en', guideStatus: 'pending' } });
+    expect(isLocked(pendingNoBank)).toBe(true);
+    // bank absent, but nav is still unlocked — screen is not forced
+    const pendingBank = reducer(pendingNoBank, { type: 'HYDRATE', payload: {
+      user: { sub: 'u1', email: 'you@example.com', displayName: 'You', avatarUrl: null, language: 'en', guideStatus: 'pending' },
+      bank: { currency: 'MXN', fixedFee: 320, convPct: 3, taxPct: 2 },
+      sources: [], projects: [], settlements: [], sharesByMe: [], sharesWithMe: [], months: [], sharedMonths: [], fx: null,
+    } });
+    expect(isLocked(pendingBank)).toBe(true);
+  });
+
+  it('guide is unlocked once guide_status is done, even without bank', () => {
+    const doneNoBank = reducer(initialState, { type: 'HYDRATE', payload: {
+      user: { sub: 'u1', email: 'you@example.com', displayName: 'You', avatarUrl: null, language: 'en', guideStatus: 'done' },
+      bank: null,
+      sources: [], projects: [], settlements: [], sharesByMe: [], sharesWithMe: [], months: [], sharedMonths: [], fx: null,
+    } });
+    expect(isLocked(doneNoBank)).toBe(false);
   });
 
   it('LOGIN_SUCCESS then HYDRATE with bank unlocks and lands on sources (empty state)', () => {
-    const logged = reducer(initialState, { type: 'LOGIN_SUCCESS', user: { sub: 'u1', email: 'you@example.com', displayName: 'You', avatarUrl: null, language: 'en' } });
+    const logged = reducer(initialState, { type: 'LOGIN_SUCCESS', user: { sub: 'u1', email: 'you@example.com', displayName: 'You', avatarUrl: null, language: 'en', guideStatus: 'pending' } });
     const state = reducer(logged, { type: 'HYDRATE', payload: {
-      user: { sub: 'u1', email: 'you@example.com', displayName: 'You', avatarUrl: null, language: 'en' },
+      user: { sub: 'u1', email: 'you@example.com', displayName: 'You', avatarUrl: null, language: 'en', guideStatus: 'done' },
       bank: { currency: 'MXN', fixedFee: 320, convPct: 3, taxPct: 2 },
       sources: [], projects: [], settlements: [], sharesByMe: [], sharesWithMe: [], months: [], sharedMonths: [], fx: null,
     } });
@@ -83,7 +98,7 @@ describe('appReducer', () => {
   });
 
   it('SET_LANG switches the per-user language', () => {
-    const state = reducer(reducer(initialState, { type: 'LOGIN_SUCCESS', user: { sub: 'u1', email: 'x@y.com', displayName: 'X', avatarUrl: null, language: 'en' } }), { type: 'SET_LANG', lang: 'es' });
+    const state = reducer(reducer(initialState, { type: 'LOGIN_SUCCESS', user: { sub: 'u1', email: 'x@y.com', displayName: 'X', avatarUrl: null, language: 'en', guideStatus: 'done' } }), { type: 'SET_LANG', lang: 'es' });
     expect(state.user?.language).toBe('es');
   });
 });

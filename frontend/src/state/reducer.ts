@@ -26,9 +26,13 @@ export function isOnboarded(state: AppState): boolean {
   return state.user !== null && state.bank !== null;
 }
 
-/** Nav is locked to Settings until bank settings exist (ticket 10). */
+/**
+ * Navigation is never hard-locked to Settings (ticket 07). Bank no longer gates
+ * nav — it gates only Income Source creation (server 409 bank_settings_missing).
+ * The flag reflects whether the first-time setup guide still needs to run.
+ */
 export function isLocked(state: AppState): boolean {
-  return !isOnboarded(state);
+  return state.user?.guideStatus === 'pending';
 }
 
 export function reducer(state: AppState = initialState, action: Action): AppState {

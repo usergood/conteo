@@ -58,8 +58,8 @@ def _upsert_user(conn: sqlite3.Connection, sub: str, email: str, display_name: s
         )
     else:
         conn.execute(
-            "INSERT INTO users (sub, email, display_name, avatar_url, language, created_at, last_login_at) "
-            "VALUES (?, ?, ?, ?, 'en', ?, ?)",
+            "INSERT INTO users (sub, email, display_name, avatar_url, language, guide_status, created_at, last_login_at) "
+            "VALUES (?, ?, ?, ?, 'en', 'pending', ?, ?)",
             (sub, email, display_name, avatar_url, now, now),
         )
     conn.commit()

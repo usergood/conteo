@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useReducer,
 import { api } from '@/lib/api';
 import { I18nContext, translate } from '@/lib/i18n';
 import { useTheme } from '@/lib/theme';
-import { initialState, isLocked, reducer } from '@/state/reducer';
+import { initialState, reducer } from '@/state/reducer';
 import type { Action, AppState, Screen } from '@/state/types';
 import { LoginScreen } from '@/components/screens/Login';
 import { SettingsScreen } from '@/components/screens/Settings';
@@ -85,7 +85,6 @@ export function App() {
     [state.user?.language],
   );
 
-  const locked = isLocked(state);
   const screen = state.screen;
 
   if (loading) return <main className="app"><div className="meta">…</div></main>;
@@ -116,7 +115,6 @@ export function App() {
               <button
                 key={s}
                 className={screen === s ? 'active' : ''}
-                disabled={locked && s !== 'settings'}
                 onClick={() => dispatch({ type: 'SET_SCREEN', screen: s })}
               >
                 {tValue.t(s)}
