@@ -10,21 +10,21 @@ export function SettingsScreen() {
   const { state, dispatch } = useApp();
   const bank = state.bank;
   const first = bank === null;
-  const [fee, setFee] = useState(bank?.fixedFee ?? 320);
-  const [pct, setPct] = useState(bank?.convPct ?? 0);
-  const [tax, setTax] = useState(bank?.taxPct ?? 0);
+  const [fee, setFee] = useState(String(bank?.fixedFee ?? 320));
+  const [pct, setPct] = useState(String(bank?.convPct ?? 0));
+  const [tax, setTax] = useState(String(bank?.taxPct ?? 0));
   const [err, setErr] = useState('');
 
   useEffect(() => {
     if (bank) {
-      setFee(bank.fixedFee);
-      setPct(bank.convPct);
-      setTax(bank.taxPct);
+      setFee(String(bank.fixedFee));
+      setPct(String(bank.convPct));
+      setTax(String(bank.taxPct));
     } else {
       api.settingsSeed().then((seed) => {
-        setFee(seed.fixedFee);
-        setPct(seed.convPct);
-        setTax(seed.taxPct);
+        setFee(String(seed.fixedFee));
+        setPct(String(seed.convPct));
+        setTax(String(seed.taxPct));
       }).catch(() => {});
     }
   }, [bank]);
@@ -50,17 +50,17 @@ export function SettingsScreen() {
       </div>
       <div className="field">
         <label>{t('settings.fee')}</label>
-        <input type="number" step="any" value={fee} onChange={(e) => setFee(e.target.valueAsNumber || 0)} />
+        <input type="number" step="any" value={fee} onChange={(e) => setFee(e.target.value)} />
         <div className="hint">{t('settings.fee.hint')}</div>
       </div>
       <div className="field">
         <label>{t('settings.pct')}</label>
-        <input type="number" step="any" value={pct} onChange={(e) => setPct(e.target.valueAsNumber || 0)} />
+        <input type="number" step="any" value={pct} onChange={(e) => setPct(e.target.value)} />
         <div className="hint">{t('settings.pct.hint')}</div>
       </div>
       <div className="field">
         <label>{t('settings.tax')}</label>
-        <input type="number" step="any" value={tax} onChange={(e) => setTax(e.target.valueAsNumber || 0)} />
+        <input type="number" step="any" value={tax} onChange={(e) => setTax(e.target.value)} />
       </div>
       {err && <div className="error">{err}</div>}
       <button className="btn primary" onClick={save}>{first ? t('settings.save.cont') : t('settings.save')}</button>

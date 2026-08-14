@@ -75,9 +75,9 @@ function SourceForm({ initial, onDone }: { initial?: IncomeSource; onDone: () =>
   const isEdit = !!initial;
   const [name, setName] = useState(initial?.name ?? '');
   const [currency, setCurrency] = useState(initial?.currency ?? 'USD');
-  const [salary, setSalary] = useState(initial?.fixedSalary ?? 0);
+  const [salary, setSalary] = useState(String(initial?.fixedSalary ?? 0));
   const [mode, setMode] = useState<'none' | 'pct' | 'flat'>(initial?.commissionMode ?? 'none');
-  const [value, setValue] = useState(initial?.commissionValue ?? 0);
+  const [value, setValue] = useState(String(initial?.commissionValue ?? 0));
   const [err, setErr] = useState('');
   const { notify, dispatch } = useApp();
 
@@ -119,7 +119,7 @@ function SourceForm({ initial, onDone }: { initial?: IncomeSource; onDone: () =>
       </div>
       <div className="field">
         <label>{t('sources.salary')}</label>
-        <input type="number" step="any" value={salary} onChange={(e) => setSalary(e.target.valueAsNumber || 0)} placeholder={t('sources.salary.placeholder')} />
+        <input type="number" step="any" value={salary} onChange={(e) => setSalary(e.target.value)} placeholder={t('sources.salary.placeholder')} />
       </div>
       <div className="field">
         <label>{t('sources.comm.mode')}</label>
@@ -132,7 +132,7 @@ function SourceForm({ initial, onDone }: { initial?: IncomeSource; onDone: () =>
       {mode !== 'none' && (
         <div className="field">
           <label>{mode === 'pct' ? t('sources.comm.value.pct') : t('sources.comm.value.flat')}</label>
-          <input type="number" step="any" value={value} onChange={(e) => setValue(e.target.valueAsNumber || 0)} />
+          <input type="number" step="any" value={value} onChange={(e) => setValue(e.target.value)} />
         </div>
       )}
       {err && <div className="error">{err}</div>}
@@ -256,7 +256,7 @@ function addWeeks(iso: string, weeks: number): string {
 function ProjectForm({ source, onDone, onCancel }: { source: IncomeSource; onDone: () => void; onCancel: () => void }) {
   const { t } = useI18n();
   const [name, setName] = useState('');
-  const [value, setValue] = useState(0);
+  const [value, setValue] = useState('');
   const [assigned, setAssigned] = useState(new Date().toISOString().slice(0, 10));
   const [end, setEnd] = useState(addWeeks(new Date().toISOString().slice(0, 10), 6));
   const [approval, setApproval] = useState('');
@@ -286,7 +286,7 @@ function ProjectForm({ source, onDone, onCancel }: { source: IncomeSource; onDon
       <h3>{t('proj.title')}</h3>
       <p className="meta">{t('proj.sub', { cur: source.currency })}</p>
       <div className="field"><label>{t('proj.name')}</label><input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Website redesign" /></div>
-      <div className="field"><label>{t('proj.value')} ({source.currency})</label><input type="number" step="any" value={value} onChange={(e) => setValue(e.target.valueAsNumber || 0)} /></div>
+      <div className="field"><label>{t('proj.value')} ({source.currency})</label><input type="number" step="any" value={value} onChange={(e) => setValue(e.target.value)} /></div>
       <div className="field"><label>{t('proj.assigned')}</label><input type="date" value={assigned} onChange={(e) => setAssigned(e.target.value)} /></div>
       <div className="field"><label>{t('proj.end')}</label><input type="date" value={end} onChange={(e) => setEnd(e.target.value)} /></div>
       <div className="field"><label>{t('proj.approval')}</label><input type="date" value={approval} onChange={(e) => setApproval(e.target.value)} /></div>
