@@ -1,5 +1,30 @@
 import { createContext, useContext } from 'react';
-import type { Language } from '@/state/types';
+
+/*
+ * Single source of truth for available languages (ticket 8). `Language` is
+ * derived from it; adding a third language is a one-line change here. The
+ * dropdown renders `flag + code`; `name` backs aria-label/title.
+ */
+export const LANGUAGES = [
+  { code: 'en', name: 'English', flag: '🇬🇧' },
+  { code: 'es', name: 'Español', flag: '🇪🇸' },
+] as const;
+
+export type Language = (typeof LANGUAGES)[number]['code'];
+
+export function isLanguage(value: unknown): value is Language {
+  return LANGUAGES.some((l) => l.code === value);
+}
+
+/**
+ * Language precedence (ticket 8): user.language → localStorage → server default.
+ * Falls back to 'en' only if none of the inputs is a known code.
+ */
+export function resolveLanguage(userLang: unknown, stored: unknown, defaultLang: unknown): Language {
+  if (isLanguage(userLang)) return userLang;
+  if (isLanguage(stored)) return stored;
+  return isLanguage(defaultLang) ? defaultLang : 'en';
+}
 
 /* Flat key -> string per locale (ticket 11). English is the only fallback. */
 const en: Record<string, string> = {

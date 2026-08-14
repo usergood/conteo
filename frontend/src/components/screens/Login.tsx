@@ -7,7 +7,7 @@ import type { AuthConfig } from '@/state/types';
 import { useApp } from '@/components/App';
 
 export function LoginScreen() {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
   const { dispatch, reload } = useApp();
   const [config, setConfig] = useState<AuthConfig | null>(null);
   const [token, setToken] = useState('demo-token');
@@ -21,7 +21,7 @@ export function LoginScreen() {
   const devLogin = async () => {
     setErr('');
     try {
-      const { user } = await api.devLogin(token.trim(), email.trim());
+      const { user } = await api.devLogin(token.trim(), email.trim(), lang);
       dispatch({ type: 'LOGIN_SUCCESS', user });
       await reload();
     } catch (e) {
@@ -32,7 +32,7 @@ export function LoginScreen() {
   const googleLogin = async () => {
     setErr('');
     try {
-      const { url } = await api.googleUrl();
+      const { url } = await api.googleUrl(lang);
       window.location.href = url;
     } catch (e) {
       setErr(e instanceof Error ? e.message : String(e));

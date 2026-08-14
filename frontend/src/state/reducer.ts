@@ -1,4 +1,4 @@
-import type { Action, AppState, MonthSummary, SharedMonthSummary, Language } from './types';
+import type { Action, AppState, MonthSummary, SharedMonthSummary } from './types';
 
 export const initialState: AppState = {
   user: null,
@@ -103,7 +103,9 @@ export function reducer(state: AppState = initialState, action: Action): AppStat
     case 'SELECT_SOURCE':
       return { ...state, selectedSourceId: action.id };
     case 'SET_LANG':
-      return state.user ? { ...state, user: { ...state.user, language: action.lang as Language } } : state;
+      return state.user
+        ? { ...state, user: { ...state.user, language: action.lang } }
+        : { ...state }; // new reference so the anonymous pick still re-renders
     case 'SET_MONTH_TAB':
       return { ...state, monthTab: action.tab, monthFilters: { source: 'all', year: 'all', month: 'all', q: '' } };
     case 'SET_MONTH_FILTERS':

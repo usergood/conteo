@@ -45,13 +45,16 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   authConfig: () => request<AuthConfig>('/api/auth/config'),
 
-  devLogin: (token: string, email: string) =>
+  devLogin: (token: string, email: string, language?: string) =>
     request<{ user: User }>('/api/auth/dev-login', {
       method: 'POST',
-      body: JSON.stringify({ token, email }),
+      body: JSON.stringify({ token, email, language }),
     }),
 
-  googleUrl: () => request<{ url: string }>('/api/auth/google-url'),
+  googleUrl: (lang?: string) =>
+    request<{ url: string }>(
+      `/api/auth/google-url${lang ? `?lang=${encodeURIComponent(lang)}` : ''}`,
+    ),
 
   hydrate: () => request<HydratePayload>('/api/auth/me'),
 

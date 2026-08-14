@@ -1,3 +1,5 @@
+import type { Language } from '@/lib/i18n';
+
 export type Screen =
   | 'login'
   | 'settings'
@@ -6,8 +8,6 @@ export type Screen =
   | 'forecast'
   | 'months'
   | 'share';
-
-export type Language = 'en' | 'es';
 
 export type GuideStatus = 'pending' | 'skipped' | 'done';
 
@@ -167,6 +167,7 @@ export interface AuthConfig {
   authMode: 'google' | 'dev';
   googleClientId: string;
   devLoginEnabled: boolean;
+  defaultLanguage: string;
 }
 
 export interface SettingsSeed {

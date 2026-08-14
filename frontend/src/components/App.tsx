@@ -2,10 +2,11 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useState } from 'react';
 import { api } from '@/lib/api';
-import { I18nContext, translate } from '@/lib/i18n';
+import { I18nContext, isLanguage, resolveLanguage, translate, type Language } from '@/lib/i18n';
 import { useTheme } from '@/lib/theme';
 import { initialState, reducer } from '@/state/reducer';
 import type { Action, AppState, Screen } from '@/state/types';
+import { LanguageSelector } from '@/components/LanguageSelector';
 import { LoginScreen } from '@/components/screens/Login';
 import { SettingsScreen } from '@/components/screens/Settings';
 import { SourcesScreen } from '@/components/screens/Sources';
@@ -32,13 +33,25 @@ export const useApp = () => useContext(AppContext);
 
 const NAV: Screen[] = ['forecast', 'sources', 'close', 'months', 'share', 'settings'];
 
-const LANG_SYMBOL: Record<string, string> = { en: '🇬🇧', es: '🇪🇸' };
+const LANG_STORAGE_KEY = 'conteo-language';
 
 export function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState('');
+  const [defaultLang, setDefaultLang] = useState<Language>('en');
   const { theme, cycleTheme } = useTheme();
+
+  useEffect(() => {
+    api
+      .authConfig()
+      .then((cfg) => {
+        if (isLanguage(cfg.defaultLanguage)) setDefaultLang(cfg.defaultLanguage);
+      })
+      .catch(() => {
+        /* default 'en' */
+      });
+  }, []);
 
   const reload = useCallback(async () => {
     try {
@@ -66,23 +79,33 @@ export function App() {
     }
   }, []);
 
-  const toggleLang = useCallback(async () => {
-    const next = state.user?.language === 'en' ? 'es' : 'en';
-    dispatch({ type: 'SET_LANG', lang: next });
-    try {
-      await api.saveLanguage(next);
-    } catch {
-      /* non-fatal */
-    }
-  }, [state.user?.language]);
+  const storedLang =
+    typeof window !== 'undefined' ? window.localStorage.getItem(LANG_STORAGE_KEY) : null;
+  const lang = resolveLanguage(state.user?.language, storedLang, defaultLang);
+
+  const selectLang = useCallback(
+    (next: Language) => {
+      dispatch({ type: 'SET_LANG', lang: next });
+      try {
+        window.localStorage.setItem(LANG_STORAGE_KEY, next);
+      } catch {
+        /* non-fatal */
+      }
+      if (state.user) {
+        api.saveLanguage(next).catch(() => {
+          /* non-fatal */
+        });
+      }
+    },
+    [state.user],
+  );
 
   const tValue = useMemo(
     () => ({
-      lang: (state.user?.language ?? 'en') as 'en' | 'es',
-      t: (key: string, vars?: Record<string, string | number>) =>
-        translate((state.user?.language ?? 'en') as 'en' | 'es', key, vars),
+      lang,
+      t: (key: string, vars?: Record<string, string | number>) => translate(lang, key, vars),
     }),
-    [state.user?.language],
+    [lang],
   );
 
   const screen = state.screen;
@@ -100,12 +123,10 @@ export function App() {
           </div>
           <span className="spacer" />
           {notice && <span className="meta">{notice}</span>}
+          <LanguageSelector lang={lang} onChange={selectLang} />
+          <button className="iconbtn" onClick={cycleTheme}>{theme === 'dark' ? '☀️' : '🌙'}</button>
           {state.user && (
-            <>
-              <button className="iconbtn" onClick={toggleLang}>{LANG_SYMBOL[tValue.lang] ?? tValue.lang.toUpperCase()}</button>
-              <button className="iconbtn" onClick={cycleTheme}>{theme === 'dark' ? '☀️' : '🌙'}</button>
-              <button className="iconbtn" onClick={logout}>{tValue.t('common.logout')}</button>
-            </>
+            <button className="iconbtn" onClick={logout}>{tValue.t('common.logout')}</button>
           )}
         </header>
 

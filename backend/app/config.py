@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     app_base_url: str = "http://127.0.0.1:3000"
     web_port: int = 3000
     data_dir: str = "/data"
+    default_language: str = "en"  # runtime-default UI language for new users
 
     @property
     def secure_cookies(self) -> bool:

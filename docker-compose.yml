@@ -11,4 +11,5 @@ services:
       DEV_AUTH_TOKEN: ${DEV_AUTH_TOKEN:-change-me}
       SESSION_SECRET: ${SESSION_SECRET:-change-me-too}
       APP_BASE_URL: http://localhost:3000
+      DEFAULT_LANGUAGE: ${DEFAULT_LANGUAGE:-en}
     restart: unless-stopped

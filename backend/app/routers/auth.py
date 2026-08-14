@@ -25,6 +25,14 @@ from ..services.months import now_iso
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
 OAUTH_VERIFIER_COOKIE = "conteo_oauth_verifier"
+OAUTH_LANG_COOKIE = "conteo_oauth_lang"
+
+# Backend keeps its explicit whitelist (the frontend's LANGUAGES drives the UI).
+SUPPORTED_LANGS = ("en", "es")
+
+
+def _valid_lang(lang: str | None) -> str | None:
+    return lang if lang in SUPPORTED_LANGS else None
 
 
 def _set_session_cookie(response: Response, token: str) -> None:
@@ -48,7 +56,11 @@ def _redirect_uri() -> str:
     return f"{get_settings().app_base_url.rstrip('/')}/api/auth/callback"
 
 
-def _upsert_user(conn: sqlite3.Connection, sub: str, email: str, display_name: str, avatar_url: str | None) -> None:
+def _upsert_user(
+    conn: sqlite3.Connection, sub: str, email: str, display_name: str, avatar_url: str | None, language: str | None = None
+) -> None:
+    """Upsert a user. `language` seeds ONLY brand-new users; existing users keep
+    their stored language (their account preference always wins)."""
     existing = conn.execute("SELECT sub FROM users WHERE sub = ?", (sub,)).fetchone()
     now = now_iso()
     if existing:
@@ -57,10 +69,11 @@ def _upsert_user(conn: sqlite3.Connection, sub: str, email: str, display_name: s
             (email, display_name, avatar_url, now, sub),
         )
     else:
+        lang = _valid_lang(language) or _valid_lang(get_settings().default_language) or "en"
         conn.execute(
             "INSERT INTO users (sub, email, display_name, avatar_url, language, guide_status, created_at, last_login_at) "
-            "VALUES (?, ?, ?, ?, 'en', 'pending', ?, ?)",
-            (sub, email, display_name, avatar_url, now, now),
+            "VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)",
+            (sub, email, display_name, avatar_url, lang, now, now),
         )
     conn.commit()
 
@@ -78,6 +91,7 @@ def _activate_pending_shares(conn: sqlite3.Connection, email: str, sub: str) -> 
 class DevLoginBody(BaseModel):
     token: str
     email: str
+    language: str = ""
 
 
 @router.get("/config")
@@ -87,11 +101,12 @@ def auth_config():
         "authMode": settings.auth_mode,
         "googleClientId": settings.google_client_id,
         "devLoginEnabled": bool(settings.dev_auth_token),
+        "defaultLanguage": _valid_lang(settings.default_language) or "en",
     }
 
 
 @router.get("/google-url")
-def google_url(response: Response):
+def google_url(response: Response, lang: str | None = None):
     if get_settings().auth_mode != "google":
         raise HTTPException(status_code=403, detail="google_auth_disabled")
     verifier, _ = oauth.new_pkce()
@@ -105,6 +120,17 @@ def google_url(response: Response):
         secure=settings.secure_cookies,
         path="/",
     )
+    valid_lang = _valid_lang(lang)
+    if valid_lang:
+        response.set_cookie(
+            key=OAUTH_LANG_COOKIE,
+            value=valid_lang,
+            max_age=600,
+            httponly=True,
+            samesite="lax",
+            secure=settings.secure_cookies,
+            path="/",
+        )
     return {"url": oauth.google_auth_url(verifier, _redirect_uri())}
 
 
@@ -131,7 +157,7 @@ def google_callback(
     email = claims.get("email", "").lower()
     display_name = claims.get("name", email.split("@")[0])
     avatar = claims.get("picture")
-    _upsert_user(conn, sub, email, display_name, avatar)
+    _upsert_user(conn, sub, email, display_name, avatar, request.cookies.get(OAUTH_LANG_COOKIE))
     _activate_pending_shares(conn, email, sub)
     refresh = tokens.get("refresh_token")
     if refresh:
@@ -146,6 +172,7 @@ def google_callback(
     response = RedirectResponse(url=settings.app_base_url.rstrip("/") + "/")
     _set_session_cookie(response, token)
     response.delete_cookie(key=OAUTH_VERIFIER_COOKIE, path="/")
+    response.delete_cookie(key=OAUTH_LANG_COOKIE, path="/")
     return response
 
 
@@ -161,7 +188,7 @@ def dev_login(body: DevLoginBody, response: Response, conn: sqlite3.Connection =
         raise HTTPException(status_code=422, detail="invalid_email")
     sub = "dev:" + hashlib.sha1(email.encode()).hexdigest()
     display_name = email.split("@")[0]
-    _upsert_user(conn, sub, email, display_name, None)
+    _upsert_user(conn, sub, email, display_name, None, body.language)
     _activate_pending_shares(conn, email, sub)
     token = create_session(conn, sub)
     _set_session_cookie(response, token)
