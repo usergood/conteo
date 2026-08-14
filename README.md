@@ -11,7 +11,7 @@ The app logo lives in one canonical place — `frontend/public/conteo.svg` — a
 
 - **Stack**: Python FastAPI backend, Next.js/React frontend, SQLite storage, Docker.
 - **Auth**: Google Sign-In (optional — a dev-login bypass covers local/DEV runs without any Google setup).
-- **Deploy**: single container behind a Cloudflare Tunnel.
+- **Deploy**: single container behind a Cloudflare Tunnel. Images are published to GHCR and pulled by tag — see the [Run](#run) section and [RELEASING.md](RELEASING.md) for the release ritual.
 
 This guide walks a fresh instance from zero to running. It assumes a Linux host with Docker, and a domain you can point DNS at.
 
@@ -75,6 +75,11 @@ EOF
 
 ## Run
 
+Published images are pulled from **GHCR** (a local `docker build` is not needed).
+Always pin a `vX.Y.Z` tag for production so you know exactly which version is
+running; see [RELEASING.md](RELEASING.md) for the release ritual and how to
+update a deployed instance.
+
 ```bash
 docker run -d \
   --name conteo \
@@ -87,7 +92,7 @@ docker run -d \
   -e SESSION_SECRET=<random> \
   -e APP_BASE_URL=https://conteo.YOUR_DOMAIN \
   -e WEB_PORT=3000 \
-  conteo:latest
+  ghcr.io/usergood/conteo:v0.1.0
 ```
 
 ### Environment variables
@@ -131,7 +136,7 @@ docker run -d \
   -e DEV_AUTH_TOKEN=<your-token> \
   -e SESSION_SECRET=<random> \
   -e APP_BASE_URL=http://127.0.0.1:3000 \
-  conteo:latest
+  ghcr.io/usergood/conteo:latest
 ```
 
 The dev-login screen takes the token plus an email, auto-creates the user if missing, and issues the same session cookie the Google flow would.
