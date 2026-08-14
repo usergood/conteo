@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>{{ data.appName }} — {{ data.monthLabel }}</title>
+<style>
+  @page { size: A4; margin: 18mm 16mm; }
+  body { font-family: "DejaVu Sans", sans-serif; color: #1f2430; font-size: 11px; line-height: 1.45; }
+  .head { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 2px solid #6d4aff; padding-bottom: 6px; margin-bottom: 14px; }
+  .head .app { font-size: 16px; font-weight: 700; color: #6d4aff; }
+  .head .sub { text-align: right; color: #555; font-size: 10px; }
+  h1 { font-size: 15px; margin: 0 0 2px; }
+  .meta { color: #555; font-size: 10px; margin-bottom: 14px; }
+  h2 { font-size: 12px; margin: 16px 0 6px; border-bottom: 1px solid #ddd; padding-bottom: 3px; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+  th, td { text-align: right; padding: 3px 6px; }
+  th { font-size: 9px; text-transform: uppercase; letter-spacing: .04em; color: #555; border-bottom: 1px solid #ccc; }
+  td.l, th.l { text-align: left; }
+  tr.row td { border-bottom: 1px dashed #e3e3e3; }
+  .total td { font-weight: 700; border-top: 1px solid #333; }
+  .net { background: #f0ecff; font-weight: 700; }
+  .totals { border-top: 2px solid #6d4aff; margin-top: 8px; padding-top: 6px; }
+  .rates { margin-top: 12px; font-size: 9px; color: #555; }
+  .note { margin-top: 16px; font-size: 9px; color: #777; text-align: center; border-top: 1px solid #ddd; padding-top: 6px; }
+</style>
+</head>
+<body>
+  <div class="head">
+    <div class="app">{{ data.appName }}</div>
+    <div class="sub">Salary slip · {{ data.monthLabel }}</div>
+  </div>
+  <h1>{{ data.userName }}</h1>
+  <div class="meta">{{ data.userEmail }} · generated {{ data.generated }}</div>
+
+  {% for s in data.sections %}
+  <h2>{{ s.source }} ({{ s.currency }})</h2>
+  <table>
+    <tr><th class="l">Item</th><th>Foreign</th><th>MXN @ derived rate</th></tr>
+    <tr class="row"><td class="l">Fixed salary</td><td>{{ fmt_foreign(s.fixedSalaryForeign, s.currency) }}</td><td>{{ fmt_mxn(s.fixedMxn) }}</td></tr>
+    {% for c in s.commissions %}
+    <tr class="row"><td class="l">Commission — {{ c.name }}</td><td>{{ fmt_foreign(c.commissionForeign, s.currency) }}</td><td>{{ fmt_mxn(c.commissionMxn) }}</td></tr>
+    {% endfor %}
+    <tr class="row"><td class="l">Gross total</td><td>{{ fmt_foreign(s.grossForeign, s.currency) }}</td><td>{{ fmt_mxn(s.grossMxn) }}</td></tr>
+    <tr class="row"><td class="l">Bank fee ({{ s.bankPct }}% + {{ fmt_mxn(s.fixedFee) }} × {{ s.transfers }})</td><td></td><td>{{ fmt_mxn(s.bankFee) }}</td></tr>
+    <tr class="row"><td class="l">Bank-net (typed)</td><td></td><td>{{ fmt_mxn(s.bankNet) }}</td></tr>
+    <tr class="row"><td class="l">Tax ({{ s.taxPct }}% of bank-net)</td><td></td><td>{{ fmt_mxn(s.tax) }}</td></tr>
+    <tr class="net"><td class="l">Net after tax</td><td></td><td>{{ fmt_mxn(s.netAfterTax) }}</td></tr>
+  </table>
+  {% endfor %}
+
+  <div class="totals">
+    <table>
+      <tr class="total"><td class="l">Total net after tax</td><td></td><td>{{ fmt_mxn(data.totals.netAfterTax) }}</td></tr>
+    </table>
+  </div>
+
+  <div class="rates">
+    {% for r in data.sections %}{{ r.currency }}→MXN derived rate: {{ r.derivedRateLabel }}{% if not loop.last %} · {% endif %}{% endfor %}
+  </div>
+
+  <div class="note">{{ data.note }}</div>
+</body>
+</html>

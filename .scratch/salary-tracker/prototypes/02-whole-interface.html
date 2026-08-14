@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Whole-interface feel v3 — prototype</title>
+<style>
+  /* ================= theming (ticket 11) — light purple / dark blue ================= */
+  :root[data-theme="light"] {
+    --bg: #f5f3fb;
+    --panel: #ffffff;
+    --ink: #242034;
+    --muted: #6e6a88;
+    --line: #e6e2f3;
+    --accent: #6d4aff;
+    --accent-ink: #ffffff;
+    --accent-soft: #efeaff;
+    --warn: #b45309;
+    --warn-soft: #fff7e8;
+    --ok: #15803d;
+    --ok-soft: #eef8f0;
+    --appbar: linear-gradient(135deg, #dcd0ff, #c9b8ff);
+    --appbar-ink: #332a5e;
+    --code-bg: #1b1730;
+    --code-ink: #cbd5e1;
+    --code-key: #a5b4fc;
+  }
+  :root[data-theme="dark"] {
+    --bg: #0d1020;
+    --panel: #151a33;
+    --ink: #e9e6f8;
+    --muted: #9c98ba;
+    --line: #262c4d;
+    --accent: #8b7bff;
+    --accent-ink: #17122b;
+    --accent-soft: #262148;
+    --warn: #fbbf24;
+    --warn-soft: #2a2110;
+    --ok: #4ade80;
+    --ok-soft: #12261a;
+    --appbar: linear-gradient(135deg, #1e2f5c, #17264b);
+    --appbar-ink: #dbe4f7;
+    --code-bg: #0a0d1c;
+    --code-ink: #cbd5e1;
+    --code-key: #93c5fd;
+  }
+  * { box-sizing: border-box; }
+  html[data-theme="dark"] { color-scheme: dark; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ink);
+    background: var(--bg);
+    line-height: 1.55;
+    transition: background .2s, color .2s;
+  }
+  main { max-width: 1180px; margin: 0 auto; padding: 32px 20px 80px; }
+  header.badge {
+    display: inline-block;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    border-radius: 999px;
+    padding: 3px 12px;
+    margin-bottom: 18px;
+  }
+  h1 { font-size: 28px; margin: 0 0 10px; line-height: 1.2; }
+  p.question { font-size: 15px; color: var(--muted); margin: 0 0 10px; max-width: 90ch; }
+  p.formula {
+    background: var(--accent-soft);
+    border-left: 3px solid var(--accent);
+    padding: 10px 14px;
+    border-radius: 0 8px 8px 0;
+    font-size: 14px;
+    margin: 0 0 24px;
+    max-width: 90ch;
+  }
+  p.formula code { background: var(--panel); border: 1px solid var(--line); padding: 1px 6px; border-radius: 5px; font-size: 13px; }
+
+  section { margin-bottom: 34px; }
+  section h2 { font-size: 18px; margin: 0 0 4px; }
+  section > p.sub { color: var(--muted); font-size: 14px; margin: 0 0 14px; }
+
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+
+  .btn {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    padding: 10px 16px;
+    border-radius: 10px;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .btn.ghost { background: transparent; color: var(--accent); border-color: transparent; }
+  .btn:hover { filter: brightness(0.97); }
+  .btn:disabled { opacity: 0.45; cursor: default; }
+
+  .step {
+    width: 100%;
+    text-align: left;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--panel);
+    color: var(--ink);
+    font-size: 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .step .n {
+    flex: 0 0 24px;
+    height: 24px;
+    border-radius: 999px;
+    background: var(--bg);
+    color: var(--muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .step:hover { border-color: var(--accent); }
+  .step.done { border-color: var(--ok); }
+  .step.done .n { background: var(--ok); color: #fff; }
+  .step.current { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  .step.current .n { background: var(--accent); color: var(--accent-ink); }
+  .step .note { color: var(--muted); font-size: 13px; }
+
+  /* ---- harness controls (developer-only, always in EN) ---- */
+  .harness {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    align-items: center;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    font-size: 13px;
+  }
+  .harness .grp { display: flex; align-items: center; gap: 6px; }
+  .harness label { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }
+  .harness select, .harness button {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .harness .dot { width: 9px; height: 9px; border-radius: 999px; display: inline-block; margin-right: 5px; }
+
+  /* ---- app frames ---- */
+  .frames { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+  .frame { border-radius: 16px; overflow: hidden; background: var(--panel); }
+  .frame .fname {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--muted); padding: 8px 14px; border-bottom: 1px solid var(--line);
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  }
+  .frame.desktop, .frame.mobile { border: 1px solid var(--line); box-shadow: 0 8px 30px rgba(40,25,90,.10); }
+  .frame.desktop .app { display: grid; grid-template-columns: 204px 1fr; min-height: 560px; }
+  .frame.mobile .app { display: flex; flex-direction: column; min-height: 560px; }
+
+  .appbar {
+    background: var(--appbar); color: var(--appbar-ink);
+    padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .appbar .who { font-size: 13px; opacity: .82; }
+  .appbar .title { font-weight: 700; font-size: 15px; }
+  .appbar .spacer { flex: 1; }
+  .appbar .iconBtn {
+    background: transparent; border: 1px solid rgba(60,40,110,.35);
+    color: var(--appbar-ink); border-radius: 8px; padding: 5px 9px; font-size: 12px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .appbar .iconBtn svg { display: block; }
+
+  .sidebar { background: var(--panel); border-right: 1px solid var(--line); padding: 12px 8px; }
+  .sidebar button {
+    display: flex; align-items: center; gap: 10px; width: 100%; text-align: left;
+    border: 0; background: transparent; color: var(--muted);
+    padding: 10px 12px; border-radius: 10px; font-size: 14px; cursor: pointer; margin-bottom: 2px;
+  }
+  .sidebar button svg { flex: 0 0 auto; }
+  .sidebar button:hover { background: var(--bg); }
+  .sidebar button.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .sidebar button:disabled { opacity: .4; cursor: default; }
+
+  .tabbar { display: flex; border-top: 1px solid var(--line); background: var(--panel); margin-top: auto; }
+  .tabbar button {
+    flex: 1; border: 0; background: transparent; padding: 9px 2px; font-size: 10.5px; color: var(--muted);
+    cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0;
+  }
+  .tabbar button svg { display: block; }
+  .tabbar button.active { color: var(--accent); }
+  .tabbar button:disabled { opacity: .4; cursor: default; }
+
+  .screen { padding: 18px 16px 24px; }
+
+  .card { border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin-bottom: 12px; background: var(--panel); }
+  .card h3 { font-size: 15px; margin: 0 0 2px; }
+  .card .meta { font-size: 13px; color: var(--muted); }
+  .card .row { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed var(--line); font-size: 14px; }
+  .card .row:last-child { border-bottom: 0; }
+  .card .row .k { color: var(--muted); }
+  .card .row .v { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .card .headrow { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+  .card .headrow .btns { display: flex; gap: 6px; align-items: center; }
+  .iconbtn {
+    display: inline-flex; align-items: center; gap: 5px;
+    border: 1px solid var(--line); background: var(--panel); color: var(--muted);
+    border-radius: 8px; padding: 5px 9px; font-size: 12px; cursor: pointer;
+  }
+  .iconbtn:hover { color: var(--accent); border-color: var(--accent); }
+
+  .tag {
+    display: inline-block; font-size: 11px; border-radius: 999px; padding: 2px 9px;
+    border: 1px solid var(--line); color: var(--muted); background: var(--bg);
+  }
+  .tag.pending { color: var(--warn); border-color: var(--warn); background: var(--warn-soft); }
+  .tag.active { color: var(--ok); border-color: var(--ok); background: var(--ok-soft); }
+  .tag.accent { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 13px; margin-bottom: 3px; }
+  .field .hint { font-size: 12px; color: var(--muted); }
+  .field input, .field select {
+    width: 100%; padding: 8px 10px; font-size: 15px; color: var(--ink);
+    border: 1px solid var(--line); border-radius: 8px; margin-top: 3px; background: var(--panel);
+  }
+  .field input:focus, .field select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .field .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .empty { text-align: center; padding: 40px 12px; color: var(--muted); }
+  .empty .big { margin-bottom: 8px; }
+  .empty p { font-size: 14px; margin: 0 0 16px; }
+  .empty h3 { color: var(--ink); }
+
+  /* ---- closed months screen ---- */
+  .seg { display: flex; gap: 6px; margin-bottom: 12px; }
+  .seg button {
+    flex: 1; border: 1px solid var(--line); background: var(--panel); color: var(--muted);
+    padding: 8px 10px; border-radius: 10px; font-size: 13px; cursor: pointer;
+  }
+  .seg button.active { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .filterrow { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+  .filterrow.search { grid-template-columns: 1fr; }
+  .monthrow { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .monthrow .left .t { font-weight: 600; font-size: 15px; }
+  .monthrow .left .m { font-size: 12px; color: var(--muted); }
+
+  .statebox {
+    background: var(--code-bg); color: var(--code-ink); border-radius: 10px; padding: 14px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px;
+    overflow-x: auto; margin-top: 14px; white-space: pre-wrap; max-height: 240px; overflow-y: auto;
+  }
+  .statebox .key { color: var(--code-key); }
+
+  .slipdoc { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-top: 12px; }
+  .slipdoc .head {
+    background: var(--bg); font-size: 12px; text-transform: uppercase; letter-spacing: .07em;
+    color: var(--muted); padding: 8px 14px; border-bottom: 1px solid var(--line);
+    display: flex; justify-content: space-between;
+  }
+  .slipdoc .body { padding: 14px; }
+  .slipdoc .row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed var(--line); font-size: 14px; }
+  .slipdoc .row .k { color: var(--muted); }
+  .slipdoc .row .v { font-weight: 600; font-variant-numeric: tabular-nums; }
+  .slipdoc .row.highlight { background: var(--accent-soft); font-weight: 700; }
+  .slipdoc .note { font-size: 11px; color: var(--muted); margin-top: 10px; text-align: center; }
+
+  .changed { margin-top: 12px; font-size: 13px; color: var(--accent); min-height: 20px; }
+  footer { color: var(--muted); font-size: 13px; margin-top: 30px; border-top: 1px solid var(--line); padding-top: 14px; }
+
+  @media (max-width: 980px) { .frames { grid-template-columns: 1fr; } }
+  @media (max-width: 640px) { main { padding: 20px 12px 60px; } h1 { font-size: 23px; } }
+</style>
+</head>
+<body>
+<main>
+
+  <header class="badge">Prototype — throwaway</header>
+  <h1>Salary Tracker — whole-interface feel v3</h1>
+  <p class="question">
+    The whole app as clickable mock-ups — desktop + mobile side by side. v3 adds: real inline-SVG icons, an
+    elegant light-purple (light) / dark-blue (dark) palette, <b>edit on income sources</b>, and a new
+    <b>Closed months</b> screen with My / Shared-with-me subtrees and source · freetext · year · month filters.
+  </p>
+  <p class="formula">
+    Month close: <code>rate = (typed MXN + transfers × fixed fee) ÷ (foreign paid × (1 − bank %))</code> ·
+    Forecast net: <code>gross_MXN × (1 − bank %) − fixed fee</code>, then <code>− 2%</code> tax.
+  </p>
+
+  <div class="harness">
+    <div class="grp">
+      <label>AUTH_MODE</label>
+      <select id="authMode">
+        <option value="dev">dev</option>
+        <option value="google">google</option>
+      </select>
+      <span id="authBadge"></span>
+    </div>
+    <div class="grp">
+      <label>Theme</label>
+      <button id="themeBtn">🌓 toggle</button>
+      <span id="themeState"></span>
+    </div>
+    <div class="grp">
+      <label>Language (per-user)</label>
+      <button id="langBtn">🌐 EN / ES</button>
+      <span id="langState"></span>
+    </div>
+    <div class="grp">
+      <label>Show</label>
+      <select id="frameSel">
+        <option value="both">desktop + mobile</option>
+        <option value="desktop">desktop only</option>
+        <option value="mobile">mobile only</option>
+      </select>
+    </div>
+  </div>
+
+  <section>
+    <h2>Guided lifecycle</h2>
+    <p class="sub">Walk the whole spec in order — each step drives both frames and lands on the screen it changes.</p>
+    <div id="steps"></div>
+    <p class="changed" id="changed"></p>
+  </section>
+
+  <section>
+    <h2>The app</h2>
+    <p class="sub">Free-play in either frame. State panel below shows the full model after every action.</p>
+    <div class="frames" id="frames">
+      <div class="frame desktop">
+        <div class="fname"><span>Desktop — sidebar nav (≥1024px)</span></div>
+        <div class="app">
+          <div class="sidebar" id="sidebar"></div>
+          <div class="appbody">
+            <div class="appbar" id="appbarD"></div>
+            <div class="screen" id="screenD"></div>
+          </div>
+        </div>
+      </div>
+      <div class="frame mobile">
+        <div class="fname"><span>Mobile — bottom tab bar</span></div>
+        <div class="app">
+          <div class="appbar" id="appbarM"></div>
+          <div class="screen" id="screenM"></div>
+          <div class="tabbar" id="tabbar"></div>
+        </div>
+      </div>
+    </div>
+    <div class="statebox" id="statebox"></div>
+  </section>
+
+  <footer>
+    Throwaway prototype of the whole interface spec (map + tickets 01–11). Not production. In-memory state, mock FX
+    (USD→MXN 17.06, SEK→MXN 1.78). Icons: inline SVG (Lucide-style). Harness controls are developer-only.
+  </footer>
+
+</main>
+
+<script>
+/* =========================================================================
+   ICONS — inline SVG, Lucide-style, stroke currentColor.
+   ========================================================================= */
+const ICONS = {
+  'trend': '<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
+  'tags': '<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.83z"/><line x1="7" y1="7" x2="7.01" y2="7"/>',
+  'check': '<rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>',
+  'calendar': '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
+  'share': '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
+  'gear': '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
+  'sun': '<circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>',
+  'moon': '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
+  'globe': '<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>',
+  'pencil': '<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>',
+  'plus': '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  'arrow-left': '<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>'
+};
+const ic = (name, size = 18) =>
+  '<svg width="' + size + '" height="' + size + '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+  (ICONS[name] || '') + '</svg>';
+
+/* =========================================================================
+   I18N (ticket 11) — flat key→string per locale. App screens use t();
+   the harness (AUTH_MODE, theme, frames, walkthrough) is developer tooling.
+   ========================================================================= */
+const I18N = {
+  en: {
+    'forecast': 'Forecast', 'sources': 'Sources', 'close': 'Close', 'months': 'Closed months', 'share': 'Share', 'settings': 'Settings',
+    'login.title': 'Sign in', 'login.google': 'Continue with Google', 'login.dev.sub': 'Dev mode — type a token + email to auto-create the user.',
+    'login.token': 'Dev token', 'login.email': 'Email', 'login.submit': 'Sign in',
+    'settings.title.new': 'Bank & tax settings', 'settings.title': 'Settings',
+    'settings.sub.new': 'One bank per user. Collected at account creation — these pre-fill the forms.',
+    'settings.sub': 'Global per-user. Edits affect open settlements, future months and the forecast only (closed months are frozen).',
+    'settings.currency': 'Bank currency', 'settings.fee': 'Bank fixed fee per transfer (MXN)', 'settings.fee.hint': '320 MXN default.',
+    'settings.pct': 'Bank % on conversion', 'settings.pct.hint': 'Static % the bank takes. Decimals fine (1.5, 3).',
+    'settings.tax': 'Tax % of bank-net', 'settings.save': 'Save settings', 'settings.save.cont': 'Save & continue →',
+    'settings.currency.fixed': 'Fixed to MXN for now.',
+    'sources.empty.title': 'No income sources yet', 'sources.empty.sub': 'Add your first income source — a counterparty that pays you in one currency.',
+    'sources.add': 'Add income source', 'sources.add.title': 'Add income source',
+    'sources.add.sub': 'Commission is per-source (default 0). Each source has one currency; projects inherit it.',
+    'sources.edit': 'Edit', 'sources.edit.title': 'Edit income source',
+    'sources.edit.hint': 'Currency is mutable forward-only — closed settlements keep their recorded amounts.',
+    'sources.name': 'Name', 'sources.currency': 'Incoming currency', 'sources.salary': 'Fixed salary (per month)', 'sources.salary.placeholder': '0 = none',
+    'sources.comm.mode': 'Commission mode', 'sources.comm.none': 'No commission income', 'sources.comm.pct': '% of project value', 'sources.comm.flat': 'Fixed amount per approved project',
+    'sources.comm.value.pct': 'Commission % of project value', 'sources.comm.value.flat': 'Fixed amount per project',
+    'sources.save': 'Save source', 'sources.save.changes': 'Save changes', 'sources.cancel': 'Cancel', 'sources.back': '← All sources',
+    'sources.salary.none': 'No fixed salary', 'sources.salary.has': 'Fixed salary',
+    'sources.comm.disp.none': 'no commission', 'sources.projects': 'project(s)', 'sources.add.proj': '+ Add project',
+    'proj.title': 'Add project', 'proj.sub': 'Currency inherited: {cur}. Estimated end = assigned + 6 weeks (overridable).',
+    'proj.name': 'Name', 'proj.value': 'Value', 'proj.assigned': 'Assigned date', 'proj.end': 'Estimated end (overridable)', 'proj.approval': 'Approval date (leave empty if not approved)',
+    'proj.save': 'Save project', 'proj.cancel': 'Cancel', 'proj.back': '← Back to {name}',
+    'proj.approved': 'approved {d}', 'proj.not': 'not approved', 'proj.comm': 'Commission: {v} ({m} MXN)', 'proj.comm.none': 'Commission: —',
+    'proj.empty': 'No projects yet. Add one — the estimated end defaults to assigned + 6 weeks.',
+    'forecast.month': 'Forecast — {m}', 'forecast.window': 'window: {m}',
+    'forecast.sub': '3-month window from the first not-fully-closed month. Per-source rows; expand to see projects. One FX snapshot for the whole window (24h old).',
+    'forecast.empty': 'Add an income source to see the forecast.',
+    'forecast.gross': 'Gross (foreign → MXN)', 'forecast.net': 'Est. bank-net (gross × (1−{p}%) − {f})',
+    'forecast.netafter': 'Net after tax (−{p}%)', 'forecast.feeds': 'Projects feeding this month: {list}',
+    'forecast.total.net': 'Total estimated bank-net', 'forecast.total.after': 'Total net after tax',
+    'forecast.action': 'You have sources but no closed month yet — head to Close when the money lands.',
+    'forecast.fx': 'FX source: open.er-api.com (hourly poll, 24h refresh). Fallback: Frankfurter, then cached snapshot with a stale warning.',
+    'close.month': 'Close — {m}',
+    'close.sub': 'One settlement per source per month, closed when its payment lands. Fully closed only when every active source is closed. Type the exact MXN that hit the bank; the app derives the rate.',
+    'close.empty': 'Add a source first.', 'close.alldone': 'All sources closed for this month 🎉',
+    'close.alldone.sub': 'The salary slip is now available (all sources closed).',
+    'close.fixed': 'Fixed salary {v} {c}', 'close.pick': 'Select which projects actually landed this month:',
+    'close.transfers': 'Transfers this month', 'close.typed': 'MXN that hit the account (bank-net)',
+    'close.cta': 'Close {name} for {month}', 'close.settlements': 'Settlements this month', 'close.closed': 'closed',
+    'close.rate': 'Derived bank rate ({c}→MXN)', 'close.gross': 'Gross MXN', 'close.net': 'Bank-net (typed)',
+    'close.tax': 'Tax ({p}% of bank-net)', 'close.after': 'Net after tax', 'close.noproj': 'No projects — fixed salary only this month.',
+    'months.title': 'Closed months', 'months.sub': 'Every fully-closed month, with its slip. Two subtrees: your own closed months, and closed months shared with you read-only.',
+    'months.mine': 'My closed months', 'months.shared': 'Shared with me', 'months.search': 'Search month, source, owner…',
+    'months.year': 'Year', 'months.month': 'Month', 'months.all': 'All', 'months.empty': 'No months match these filters.',
+    'months.net': 'Net after tax', 'months.srccount': '{n} source(s)', 'months.slip': 'View slip', 'months.owner': 'Owner',
+    'months.avail.slip': 'Slip ready',
+    'slip.title': 'Salary slip — {m}', 'slip.sub': 'WeasyPrint HTML/CSS → PDF. Internal record, not a CFDI.',
+    'slip.fixed': 'Fixed salary + commissions (foreign)', 'slip.gross': 'Gross MXN', 'slip.fee': 'Bank fee ({p}% + {f}×{t})',
+    'slip.net': 'Bank-net (typed)', 'slip.tax': 'Tax ({p}%)', 'slip.after': 'Net after tax', 'slip.total': 'Total net after tax',
+    'slip.note': 'Internal record — not a fiscal document. CFDI generated manually in the SAT platform.',
+    'share.title': 'Sharing', 'share.sub': 'Share one income source (months, settlements, slips) read-only, by Google email. Status ledger: pending → active. No copies; mutations reject shared rows.',
+    'share.source': 'Share a source with', 'share.email': 'friend@gmail.com', 'share.send': 'Send share invite',
+    'share.byMe': 'Shared by me', 'share.empty': 'Nothing shared yet.', 'share.pending.sub': 'Awaiting their first sign-in.',
+    'share.active.sub': 'Read-only view: months, settlements, slips.',
+    'app.title': 'Salary Tracker'
+  },
+  es: {
+    'forecast': 'Pronóstico', 'sources': 'Fuentes', 'close': 'Cierre', 'months': 'Meses cerrados', 'share': 'Compartir', 'settings': 'Ajustes',
+    'login.title': 'Iniciar sesión', 'login.google': 'Continuar con Google', 'login.dev.sub': 'Modo dev — escribe un token + email para crear el usuario.',
+    'login.token': 'Token de desarrollo', 'login.email': 'Correo', 'login.submit': 'Entrar',
+    'settings.title.new': 'Ajustes de banco e impuestos', 'settings.title': 'Ajustes',
+    'settings.sub.new': 'Un banco por usuario. Se recogen al crear la cuenta — rellenan los formularios.',
+    'settings.sub': 'Global por usuario. Los cambios afectan solo a liquidaciones abiertas, meses futuros y pronóstico (los meses cerrados son inmutables).',
+    'settings.currency': 'Moneda del banco', 'settings.fee': 'Comisión fija del banco por transferencia (MXN)', 'settings.fee.hint': 'Por defecto 320 MXN.',
+    'settings.pct': '% del banco en la conversión', 'settings.pct.hint': 'Porcentaje fijo del banco. Se admiten decimales (1.5, 3).',
+    'settings.tax': '% de impuesto sobre el neto bancario', 'settings.save': 'Guardar ajustes', 'settings.save.cont': 'Guardar y continuar →',
+    'settings.currency.fixed': 'Fijado a MXN por ahora.',
+    'sources.empty.title': 'Aún no hay fuentes de ingresos', 'sources.empty.sub': 'Añade tu primera fuente de ingresos: un pagador que te abona en una moneda.',
+    'sources.add': 'Añadir fuente de ingresos', 'sources.add.title': 'Añadir fuente de ingresos',
+    'sources.add.sub': 'La comisión es por fuente (por defecto 0). Cada fuente tiene una moneda; los proyectos la heredan.',
+    'sources.edit': 'Editar', 'sources.edit.title': 'Editar fuente de ingresos',
+    'sources.edit.hint': 'La moneda es mutable solo hacia adelante — las liquidaciones cerradas conservan sus importes.',
+    'sources.name': 'Nombre', 'sources.currency': 'Moneda entrante', 'sources.salary': 'Salario fijo (mensual)', 'sources.salary.placeholder': '0 = ninguno',
+    'sources.comm.mode': 'Modo de comisión', 'sources.comm.none': 'Sin comisiones', 'sources.comm.pct': '% del valor del proyecto', 'sources.comm.flat': 'Importe fijo por proyecto aprobado',
+    'sources.comm.value.pct': '% de comisión sobre el valor', 'sources.comm.value.flat': 'Importe fijo por proyecto',
+    'sources.save': 'Guardar fuente', 'sources.save.changes': 'Guardar cambios', 'sources.cancel': 'Cancelar', 'sources.back': '← Todas las fuentes',
+    'sources.salary.none': 'Sin salario fijo', 'sources.salary.has': 'Salario fijo',
+    'sources.comm.disp.none': 'sin comisión', 'sources.projects': 'proyecto(s)', 'sources.add.proj': '+ Añadir proyecto',
+    'proj.title': 'Añadir proyecto', 'proj.sub': 'Moneda heredada: {cur}. Fin estimado = inicio + 6 semanas (modificable).',
+    'proj.name': 'Nombre', 'proj.value': 'Valor', 'proj.assigned': 'Fecha de asignación', 'proj.end': 'Fin estimado (modificable)', 'proj.approval': 'Fecha de aprobación (vacío si no aprobado)',
+    'proj.save': 'Guardar proyecto', 'proj.cancel': 'Cancelar', 'proj.back': '← Volver a {name}',
+    'proj.approved': 'aprobado {d}', 'proj.not': 'no aprobado', 'proj.comm': 'Comisión: {v} ({m} MXN)', 'proj.comm.none': 'Comisión: —',
+    'proj.empty': 'Aún no hay proyectos. Añade uno — el fin estimado por defecto es inicio + 6 semanas.',
+    'forecast.month': 'Pronóstico — {m}', 'forecast.window': 'ventana: {m}',
+    'forecast.sub': 'Ventana de 3 meses desde el primer mes no cerrado del todo. Filas por fuente; expande para ver proyectos. Una instantánea FX para toda la ventana (24 h).',
+    'forecast.empty': 'Añade una fuente de ingresos para ver el pronóstico.',
+    'forecast.gross': 'Bruto (extranjero → MXN)', 'forecast.net': 'Neto bancario est. (bruto × (1−{p}%) − {f})',
+    'forecast.netafter': 'Neto tras impuestos (−{p}%)', 'forecast.feeds': 'Proyectos que alimentan este mes: {list}',
+    'forecast.total.net': 'Neto bancario estimado total', 'forecast.total.after': 'Neto total tras impuestos',
+    'forecast.action': 'Ya hay fuentes pero ningún mes cerrado — ve a Cierre cuando caiga el dinero.',
+    'forecast.fx': 'Fuente FX: open.er-api.com (sondeo horario, refresco 24 h). Fallback: Frankfurter, luego instantánea en caché con aviso de caducidad.',
+    'close.month': 'Cierre — {m}',
+    'close.sub': 'Una liquidación por fuente y mes, cerrada cuando cae el pago. Cerrado del todo solo cuando todas las fuentes activas están cerradas. Escribe el MXN exacto que llegó al banco; la app deriva la tasa.',
+    'close.empty': 'Añade primero una fuente.', 'close.alldone': 'Todas las fuentes cerradas este mes 🎉',
+    'close.alldone.sub': 'El recibo de nómina ya está disponible (todas las fuentes cerradas).',
+    'close.fixed': 'Salario fijo {v} {c}', 'close.pick': 'Selecciona qué proyectos se cobraron este mes:',
+    'close.transfers': 'Transferencias este mes', 'close.typed': 'MXN que llegaron a la cuenta (neto bancario)',
+    'close.cta': 'Cerrar {name} de {month}', 'close.settlements': 'Liquidaciones este mes', 'close.closed': 'cerrado',
+    'close.rate': 'Tasa bancaria derivada ({c}→MXN)', 'close.gross': 'Bruto MXN', 'close.net': 'Neto bancario (escrito)',
+    'close.tax': 'Impuesto ({p}% del neto bancario)', 'close.after': 'Neto tras impuestos', 'close.noproj': 'Sin proyectos — solo salario fijo este mes.',
+    'months.title': 'Meses cerrados', 'months.sub': 'Todos los meses cerrados del todo, con su recibo. Dos subárboles: tus meses cerrados y los meses cerrados compartidos contigo en solo lectura.',
+    'months.mine': 'Mis meses cerrados', 'months.shared': 'Compartidos conmigo', 'months.search': 'Buscar mes, fuente, propietario…',
+    'months.year': 'Año', 'months.month': 'Mes', 'months.all': 'Todos', 'months.empty': 'Ningún mes coincide con estos filtros.',
+    'months.net': 'Neto tras impuestos', 'months.srccount': '{n} fuente(s)', 'months.slip': 'Ver recibo', 'months.owner': 'Propietario',
+    'months.avail.slip': 'Recibo listo',
+    'slip.title': 'Recibo de nómina — {m}', 'slip.sub': 'WeasyPrint HTML/CSS → PDF. Registro interno, no un CFDI.',
+    'slip.fixed': 'Salario fijo + comisiones (extranjero)', 'slip.gross': 'Bruto MXN', 'slip.fee': 'Comisión bancaria ({p}% + {f}×{t})',
+    'slip.net': 'Neto bancario (escrito)', 'slip.tax': 'Impuesto ({p}%)', 'slip.after': 'Neto tras impuestos', 'slip.total': 'Neto total tras impuestos',
+    'slip.note': 'Registro interno — no es un documento fiscal. El CFDI se genera manualmente en la plataforma del SAT.',
+    'share.title': 'Compartir', 'share.sub': 'Comparte una fuente de ingresos (meses, liquidaciones, recibos) en solo lectura, por correo de Google. Ledger de estados: pendiente → activo. Sin copias; las mutaciones rechazan filas compartidas.',
+    'share.source': 'Compartir una fuente con', 'share.email': 'amigo@gmail.com', 'share.send': 'Enviar invitación',
+    'share.byMe': 'Compartido por mí', 'share.empty': 'Aún no has compartido nada.', 'share.pending.sub': 'Esperando su primer acceso.',
+    'share.active.sub': 'Vista de solo lectura: meses, liquidaciones, recibos.',
+    'app.title': 'Salario Tracker'
+  }
+};
+const t = (key, vars) => {
+  const dict = I18N[state.user.language] || I18N.en;
+  let s = dict[key] ?? I18N.en[key] ?? key;
+  if (vars) for (const k in vars) s = s.split('{' + k + '}').join(vars[k]);
+  return s;
+};
+
+/* =========================================================================
+   MOCK DATA
+   ========================================================================= */
+const FX = { USD: { MXN: 17.06 }, SEK: { MXN: 1.784 } };
+const MONTHS = { 1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun', 7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec' };
+
+const seed = {
+  user: { email: 'you@example.com', displayName: 'You', onboarded: false, language: 'en' },
+  bank: { currency: 'MXN', fixedFee: 320, convPct: 3, taxPct: 2 },
+  sources: [],
+  projects: [],
+  settlements: [],
+  shares: [],
+  months: [
+    { id: 'm-jun', year: 2026, monthNum: 6, netTotal: 91480.25, sourceCount: 1, sources: ['US company'] },
+    { id: 'm-jul', year: 2026, monthNum: 7, netTotal: 107263.80, sourceCount: 1, sources: ['US company'] }
+  ],
+  sharedMonths: [
+    { id: 'sm1', owner: 'alex@gmail.com', source: 'Sketchy Studio', currency: 'USD', year: 2026, monthNum: 5, netAfterTax: 81250.00 },
+    { id: 'sm2', owner: 'alex@gmail.com', source: 'Sketchy Studio', currency: 'USD', year: 2026, monthNum: 6, netAfterTax: 64230.75 },
+    { id: 'sm3', owner: 'marta@gmail.com', source: 'UX Collective', currency: 'USD', year: 2026, monthNum: 6, netAfterTax: 92110.40 },
+    { id: 'sm4', owner: 'alex@gmail.com', source: 'Sketchy Studio', currency: 'USD', year: 2026, monthNum: 7, netAfterTax: 77890.20 }
+  ],
+  screen: 'login',
+  selectedSource: null,
+  lastMsg: ''
+};
+
+const harness = { authMode: 'dev', theme: 'system', frame: 'both' };
+
+/* =========================================================================
+   REDUCER
+   ========================================================================= */
+function reducer(state, action) {
+  switch (action.type) {
+    case 'DEV_LOGIN':
+      return { ...state, user: { ...state.user, email: action.email, onboarded: false }, screen: 'settings' };
+    case 'GOOGLE_LOGIN':
+      return { ...state, user: { ...state.user, email: action.email, onboarded: false }, screen: 'settings' };
+    case 'SAVE_BANK': {
+      const bank = { ...state.bank, ...action.bank, currency: 'MXN' };
+      return { ...state, bank, user: { ...state.user, onboarded: true }, screen: action.firstTime ? 'sources' : 'settings' };
+    }
+    case 'ADD_SOURCE': {
+      const src = { id: 's' + (state.sources.length + 1), name: action.name, currency: action.currency,
+        fixedSalary: action.fixedSalary, commissionMode: action.commissionMode, commissionValue: action.commissionValue, active: true };
+      return { ...state, sources: [...state.sources, src], selectedSource: src.id, lastMsg: 'Added income source: ' + src.name };
+    }
+    case 'EDIT_SOURCE':
+      return {
+        ...state,
+        sources: state.sources.map(s => s.id === action.id
+          ? { ...s, name: action.name, currency: action.currency, fixedSalary: action.fixedSalary, commissionMode: action.commissionMode, commissionValue: action.commissionValue }
+          : s),
+        selectedSource: action.id,
+        lastMsg: 'Edited income source: ' + action.name
+      };
+    case 'ADD_PROJECT': {
+      const p = { id: 'p' + (state.projects.length + 1), sourceId: action.sourceId, name: action.name,
+        value: action.value, assigned: action.assigned, estEnd: action.estEnd, approval: action.approval || null };
+      return { ...state, projects: [...state.projects, p], lastMsg: 'Added project: ' + p.name };
+    }
+    case 'CLOSE_MONTH': {
+      const { sourceId, month, paidProjectIds, typedMxn, transfers } = action;
+      const src = state.sources.find(s => s.id === sourceId);
+      const paidProjects = state.projects.filter(p => paidProjectIds.includes(p.id));
+      const commMxn = paidProjects.reduce((sum, p) => sum + commissionOf(src, p) * (FX[src.currency].MXN || 1), 0);
+      const fixedMxn = src.fixedSalary * (FX[src.currency].MXN || 1);
+      const foreignPaid = src.fixedSalary + paidProjects.reduce((sum, p) => sum + commissionOf(src, p), 0);
+      const fees = transfers * state.bank.fixedFee;
+      const foreignNet = foreignPaid * (1 - state.bank.convPct / 100);
+      const derivedRate = foreignNet > 0 ? (typedMxn + fees) / foreignNet : null;
+      const tax = typedMxn * state.bank.taxPct / 100;
+      const netAfterTax = typedMxn - tax;
+      const settle = { sourceId, month, paidProjectIds, typedMxn, transfers, foreignPaid,
+        grossMxn: fixedMxn + commMxn, derivedRate, tax, netAfterTax };
+      return { ...state, settlements: [...state.settlements, settle], lastMsg: 'Closed ' + src.name + ' for ' + month };
+    }
+    case 'ADD_SHARE': {
+      const sh = { id: 'x' + (state.shares.length + 1), sourceId: action.sourceId, email: action.email, status: 'pending' };
+      return { ...state, shares: [...state.shares, sh], lastMsg: 'Shared ' + (state.sources.find(s => s.id === action.sourceId) || {}).name + ' with ' + action.email };
+    }
+    case 'SET_SCREEN':
+      return { ...state, screen: action.screen };
+    case 'SELECT_SOURCE':
+      return { ...state, selectedSource: action.id };
+    case 'SET_LANG':
+      return { ...state, user: { ...state.user, language: action.lang } };
+    case 'GOTO_FORE':
+      return { ...state, screen: 'forecast' };
+    default:
+      return state;
+  }
+}
+
+function commissionOf(src, proj) {
+  if (src.commissionMode === 'flat') return src.commissionValue;
+  if (src.commissionMode === 'pct') return proj.value * src.commissionValue / 100;
+  return 0;
+}
+function projectGrossMxn(src, proj) { return commissionOf(src, proj) * (FX[src.currency].MXN || 1); }
+function forecastRow(src) {
+  const rate = FX[src.currency].MXN;
+  const grossMxn = src.fixedSalary * rate + state.projects.filter(p => p.sourceId === src.id).reduce((s, p) => s + projectGrossMxn(src, p), 0);
+  const bankNet = grossMxn * (1 - state.bank.convPct / 100) - state.bank.fixedFee;
+  const net = bankNet * (1 - state.bank.taxPct / 100);
+  return { src, rate, grossMxn, bankNet, net };
+}
+function myClosedMonths() {
+  const list = [...state.months];
+  const n = state.sources.length;
+  if (n > 0 && state.settlements.length === n) {
+    const totNet = state.settlements.reduce((a, s) => a + s.netAfterTax, 0);
+    list.push({ id: 'm-current', year: 2026, monthNum: 8, netTotal: totNet, sourceCount: n, sources: state.sources.map(s => s.name) });
+  }
+  return list;
+}
+const monthLabel = m => MONTHS[m.monthNum] + ' ' + m.year;
+
+/* =========================================================================
+   STATE + RENDER
+   ========================================================================= */
+let state = structuredClone(seed);
+let monthFilters = { tab: 'mine', source: 'all', q: '', year: 'all', month: 'all' };
+let activeQEl = null;
+const els = {};
+const locale = () => (state.user.language === 'es' ? 'es-MX' : 'en-US');
+const fmtM = v => (v == null || !isFinite(v) ? '—' : v.toLocaleString(locale(), { style: 'currency', currency: 'MXN', minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+const fmtN = (v, d = 2) => (v == null || !isFinite(v) ? '—' : v.toLocaleString(locale(), { minimumFractionDigits: d, maximumFractionDigits: d }));
+const fmtF = v => (v == null ? '—' : fmtN(v, 2));
+
+function dispatch(action) {
+  state = reducer(state, action);
+  render();
+}
+
+const SCREENS = [
+  { id: 'forecast', ic: 'trend' }, { id: 'sources', ic: 'tags' }, { id: 'close', ic: 'check' },
+  { id: 'months', ic: 'calendar' }, { id: 'share', ic: 'share' }, { id: 'settings', ic: 'gear' }
+];
+
+function render() {
+  const locked = !state.user.onboarded;
+  renderAppbar(els.appbarD);
+  renderAppbar(els.appbarM);
+  renderNav(els.sidebar, locked, 'sidebar');
+  renderNav(els.tabbar, locked, 'tabbar');
+  renderScreen(els.screenD);
+  renderScreen(els.screenM);
+  els.changed.textContent = state.lastMsg || '';
+  renderState();
+  if (activeQEl) {
+    const inp = activeQEl.querySelector('[data-f="q"]');
+    if (inp) { inp.focus(); const len = inp.value.length; try { inp.setSelectionRange(len, len); } catch (e) {} }
+  }
+}
+
+function renderAppbar(bar) {
+  const themeIcon = document.documentElement.dataset.theme === 'dark' ? 'sun' : 'moon';
+  bar.innerHTML = `
+    <div>
+      <div class="title">${t('app.title')}</div>
+      <div class="who">${state.user.email}</div>
+    </div>
+    <span class="spacer"></span>
+    <button class="iconBtn langBtn">${ic('globe', 14)} ${state.user.language.toUpperCase()}</button>
+    <button class="iconBtn themeBtn">${ic(themeIcon, 14)}</button>`;
+  bar.querySelector('.themeBtn').addEventListener('click', cycleTheme);
+  bar.querySelector('.langBtn').addEventListener('click', () => dispatch({ type: 'SET_LANG', lang: state.user.language === 'en' ? 'es' : 'en' }));
+}
+
+function renderNav(nav, locked, kind) {
+  nav.innerHTML = '';
+  SCREENS.forEach(s => {
+    const b = document.createElement('button');
+    b.className = state.screen === s.id ? 'active' : '';
+    if (locked && s.id !== 'settings') b.disabled = true;
+    b.innerHTML = ic(s.ic, 17) + '<span>' + t(s.id) + '</span>';
+    b.addEventListener('click', () => dispatch({ type: 'SET_SCREEN', screen: s.id }));
+    nav.appendChild(b);
+  });
+}
+
+function renderScreen(scr) {
+  const m = { forecast: screenForecast, sources: screenSources, close: screenClose, months: screenMonths, share: screenShare, settings: screenSettings, login: screenLogin };
+  scr.innerHTML = '';
+  (m[state.screen] || screenSources)(scr);
+}
+
+/* =========================================================================
+   SCREENS
+   ========================================================================= */
+function screenLogin(scr) {
+  scr.innerHTML = `
+    <div class="empty">
+      <div class="big">${ic('gear', 30)}</div>
+      <h3 style="margin:0 0 4px">${t('login.title')}</h3>
+      ${harness.authMode === 'google' ? `
+        <p class="meta">Google Sign-In · scopes: openid email profile</p>
+        <button class="btn primary" id="googleBtn">${t('login.google')}</button>
+      ` : `
+        <p class="meta">${t('login.dev.sub')}</p>
+        <div class="field"><label>${t('login.token')}</label>
+          <input id="devToken" type="text" value="demo-token"></div>
+        <div class="field"><label>${t('login.email')}</label>
+          <input id="devEmail" type="email" value="you@example.com"></div>
+        <button class="btn primary" id="devLoginBtn">${t('login.submit')}</button>
+      `}
+    </div>`;
+  scr.querySelector('#googleBtn')?.addEventListener('click', () => dispatch({ type: 'GOOGLE_LOGIN', email: 'you@gmail.com' }));
+  scr.querySelector('#devLoginBtn')?.addEventListener('click', () => {
+    dispatch({ type: 'DEV_LOGIN', email: scr.querySelector('#devEmail').value.trim() || 'you@example.com' });
+  });
+}
+
+function screenSettings(scr) {
+  const b = state.bank;
+  const first = !state.user.onboarded;
+  scr.innerHTML = `
+    <h3 style="margin:0 0 2px">${first ? t('settings.title.new') : t('settings.title')}</h3>
+    <p class="meta" style="margin:0 0 12px">${first ? t('settings.sub.new') : t('settings.sub')}</p>
+    <div class="field"><label>${t('settings.currency')}</label>
+      <input id="setCurr" type="text" value="${b.currency}" disabled>
+      <div class="hint">${t('settings.currency.fixed')}</div></div>
+    <div class="field"><label>${t('settings.fee')}</label>
+      <input id="setFee" type="number" step="any" value="${b.fixedFee}">
+      <div class="hint">${t('settings.fee.hint')}</div></div>
+    <div class="field"><label>${t('settings.pct')}</label>
+      <input id="setPct" type="number" step="any" value="${b.convPct}">
+      <div class="hint">${t('settings.pct.hint')}</div></div>
+    <div class="field"><label>${t('settings.tax')}</label>
+      <input id="setTax" type="number" step="any" value="${b.taxPct}"></div>
+    <button class="btn primary" id="saveBankBtn">${first ? t('settings.save.cont') : t('settings.save')}</button>`;
+  scr.querySelector('#saveBankBtn').addEventListener('click', () => {
+    dispatch({ type: 'SAVE_BANK', firstTime: first, bank: {
+      fixedFee: parseFloat(scr.querySelector('#setFee').value) || 0,
+      convPct: parseFloat(scr.querySelector('#setPct').value) || 0,
+      taxPct: parseFloat(scr.querySelector('#setTax').value) || 0 } });
+  });
+}
+
+function screenSources(scr) {
+  if (state.sources.length === 0) {
+    scr.innerHTML = `
+      <div class="empty">
+        <div class="big">${ic('tags', 30)}</div>
+        <h3>${t('sources.empty.title')}</h3>
+        <p>${t('sources.empty.sub')}</p>
+        <button class="btn primary" id="addFirstSource">${t('sources.add')}</button>
+      </div>`;
+    scr.querySelector('#addFirstSource').addEventListener('click', () => { scr.innerHTML = sourceFormHtml(); wireSourceForm(scr); });
+    return;
+  }
+  scr.innerHTML = state.sources.map(s => `
+    <div class="card" data-src="${s.id}" style="cursor:pointer">
+      <div class="headrow">
+        <h3>${s.name} <span class="tag accent">${s.currency}</span></h3>
+        <div class="btns">
+          <button class="iconbtn" data-edit="${s.id}">${ic('pencil', 14)} ${t('sources.edit')}</button>
+        </div>
+      </div>
+      <div class="meta">${s.fixedSalary ? t('sources.salary.has') + ' ' + fmtF(s.fixedSalary) + ' ' + s.currency : t('sources.salary.none')} · ${s.commissionMode === 'pct' ? s.commissionValue + '%' : s.commissionMode === 'flat' ? fmtF(s.commissionValue) + ' ' + s.currency + '/proj' : t('sources.comm.disp.none')}</div>
+      <div class="meta">${state.projects.filter(p => p.sourceId === s.id).length} ${t('sources.projects')}</div>
+    </div>`).join('') +
+    '<button class="btn" id="addSourceBtn" style="width:100%">' + ic('plus', 16) + ' ' + t('sources.add') + '</button>';
+  scr.querySelector('#addSourceBtn').addEventListener('click', () => { scr.innerHTML = sourceFormHtml(); wireSourceForm(scr); });
+  scr.querySelectorAll('[data-edit]').forEach(btn => btn.addEventListener('click', e => {
+    e.stopPropagation();
+    const src = state.sources.find(s => s.id === btn.dataset.edit);
+    scr.innerHTML = sourceFormHtml(src);
+    wireSourceForm(scr, src);
+  }));
+  scr.querySelectorAll('[data-src]').forEach(el => el.addEventListener('click', () => {
+    state = reducer(state, { type: 'SELECT_SOURCE', id: el.dataset.src });
+    renderProjectView();
+  }));
+}
+
+function sourceFormHtml(src) {
+  const isEdit = !!src;
+  return `
+    <h3 style="margin:0 0 2px">${isEdit ? t('sources.edit.title') : t('sources.add.title')}</h3>
+    <p class="meta" style="margin:0 0 12px">${isEdit ? t('sources.edit.hint') : t('sources.add.sub')}</p>
+    <div class="field"><label>${t('sources.name')}</label>
+      <input id="sfName" type="text" value="${isEdit ? src.name : ''}" placeholder="e.g. US company"></div>
+    <div class="field"><label>${t('sources.currency')}</label>
+      <select id="sfCurr">
+        <option value="USD" ${isEdit && src.currency === 'USD' ? 'selected' : ''}>USD</option>
+        <option value="SEK" ${isEdit && src.currency === 'SEK' ? 'selected' : ''}>SEK</option>
+      </select></div>
+    <div class="field"><label>${t('sources.salary')}</label>
+      <input id="sfSalary" type="number" step="any" value="${isEdit ? src.fixedSalary : ''}" placeholder="${t('sources.salary.placeholder')}"></div>
+    <div class="field"><label>${t('sources.comm.mode')}</label>
+      <select id="sfMode">
+        <option value="none" ${isEdit && src.commissionMode === 'none' ? 'selected' : ''}>${t('sources.comm.none')}</option>
+        <option value="pct" ${isEdit && src.commissionMode === 'pct' ? 'selected' : ''}>${t('sources.comm.pct')}</option>
+        <option value="flat" ${isEdit && src.commissionMode === 'flat' ? 'selected' : ''}>${t('sources.comm.flat')}</option>
+      </select></div>
+    <div class="field" id="sfValueWrap" style="display:${isEdit && src.commissionMode === 'none' ? 'none' : 'block'}">
+      <label id="sfValueLabel">${isEdit && src.commissionMode === 'flat' ? t('sources.comm.value.flat') : t('sources.comm.value.pct')}</label>
+      <input id="sfValue" type="number" step="any" value="${isEdit ? src.commissionValue : ''}" placeholder="0"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" id="sfCancel">${t('sources.cancel')}</button>
+      <button class="btn primary" id="sfSave">${isEdit ? t('sources.save.changes') : t('sources.save')}</button>
+    </div>`;
+}
+
+function wireSourceForm(scr, src) {
+  const mode = scr.querySelector('#sfMode');
+  const wrap = scr.querySelector('#sfValueWrap');
+  const label = scr.querySelector('#sfValueLabel');
+  const upd = () => {
+    wrap.style.display = mode.value === 'none' ? 'none' : 'block';
+    label.textContent = mode.value === 'pct' ? t('sources.comm.value.pct') : t('sources.comm.value.flat');
+  };
+  mode.addEventListener('change', upd);
+  scr.querySelector('#sfCancel').addEventListener('click', () => dispatch({ type: 'SET_SCREEN', screen: 'sources' }));
+  scr.querySelector('#sfSave').addEventListener('click', () => {
+    const payload = { name: scr.querySelector('#sfName').value.trim() || 'Unnamed',
+      currency: scr.querySelector('#sfCurr').value,
+      fixedSalary: parseFloat(scr.querySelector('#sfSalary').value) || 0,
+      commissionMode: mode.value, commissionValue: mode.value === 'none' ? 0 : (parseFloat(scr.querySelector('#sfValue').value) || 0) };
+    dispatch(src
+      ? { type: 'EDIT_SOURCE', id: src.id, ...payload }
+      : { type: 'ADD_SOURCE', ...payload });
+    renderProjectView();
+  });
+}
+
+function renderProjectView() {
+  const src = state.sources.find(s => s.id === state.selectedSource);
+  if (!src) return dispatch({ type: 'SET_SCREEN', screen: 'sources' });
+  const projs = state.projects.filter(p => p.sourceId === src.id);
+  const html = `
+    <button class="btn ghost" id="backSources" style="padding:2px 0">${t('sources.back')}</button>
+    <div class="headrow" style="margin:6px 0 2px">
+      <h3 style="margin:0">${src.name} <span class="tag accent">${src.currency}</span></h3>
+      <button class="iconbtn" id="editSrc">${ic('pencil', 14)} ${t('sources.edit')}</button>
+    </div>
+    <p class="meta" style="margin:0 0 12px">${src.fixedSalary ? t('sources.salary.has') + ' ' + fmtF(src.fixedSalary) + ' ' + src.currency : t('sources.salary.none')} · ${src.commissionMode === 'pct' ? src.commissionValue + '%' : src.commissionMode === 'flat' ? fmtF(src.commissionValue) + ' ' + src.currency + '/proj' : t('sources.comm.disp.none')}</p>
+    ${projs.length === 0 ? '<div class="empty"><div class="big">' + ic('plus', 28) + '</div><p>' + t('proj.empty') + '</p></div>' : ''}
+    ${projs.map(p => `
+      <div class="card">
+        <div class="headrow">
+          <h3>${p.name}</h3>
+          <span class="tag ${p.approval ? 'active' : 'pending'}">${p.approval ? t('proj.approved', { d: p.approval }) : t('proj.not')}</span>
+        </div>
+        <div class="meta">${t('proj.value')} ${fmtF(p.value)} ${src.currency} · ${t('proj.assigned')} ${p.assigned} · ${t('proj.end')} ${p.estEnd}</div>
+        <div class="meta">${commissionOf(src, p) > 0 ? t('proj.comm', { v: fmtF(commissionOf(src, p)) + ' ' + src.currency, m: fmtN(commissionOf(src, p) * (FX[src.currency].MXN || 1), 2) }) : t('proj.comm.none')}</div>
+      </div>`).join('')}
+    <button class="btn" id="addProjectBtn" style="width:100%">${ic('plus', 16)} ${t('sources.add.proj')}</button>`;
+  [els.screenD, els.screenM].forEach(scr => { scr.innerHTML = html; });
+  [els.screenD, els.screenM].forEach(scr => {
+    scr.querySelector('#backSources').addEventListener('click', () => dispatch({ type: 'SET_SCREEN', screen: 'sources' }));
+    scr.querySelector('#editSrc').addEventListener('click', () => { scr.innerHTML = sourceFormHtml(src); wireSourceForm(scr, src); });
+    scr.querySelector('#addProjectBtn').addEventListener('click', () => { scr.innerHTML = projectFormHtml(src); wireProjectForm(scr, src); });
+  });
+}
+
+function projectFormHtml(src) {
+  return `
+    <button class="btn ghost" id="pfBack" style="padding:2px 0">${t('proj.back', { name: src.name })}</button>
+    <h3 style="margin:6px 0 2px">${t('proj.title')}</h3>
+    <p class="meta" style="margin:0 0 12px">${t('proj.sub', { cur: src.currency })}</p>
+    <div class="field"><label>${t('proj.name')}</label><input id="pfName" type="text" placeholder="e.g. Website redesign"></div>
+    <div class="field"><label>${t('proj.value')} (${src.currency})</label><input id="pfValue" type="number" step="any"></div>
+    <div class="field"><label>${t('proj.assigned')}</label><input id="pfAssigned" type="date" value="2026-08-01"></div>
+    <div class="field"><label>${t('proj.end')}</label><input id="pfEnd" type="date" value=""></div>
+    <div class="field"><label>${t('proj.approval')}</label><input id="pfApproval" type="date"></div>
+    <div style="display:flex;gap:8px">
+      <button class="btn" id="pfCancel">${t('proj.cancel')}</button>
+      <button class="btn primary" id="pfSave">${t('proj.save')}</button>
+    </div>`;
+}
+
+function wireProjectForm(scr, src) {
+  const assigned = scr.querySelector('#pfAssigned');
+  const end = scr.querySelector('#pfEnd');
+  assigned.addEventListener('change', () => {
+    if (!end.value) { const d = new Date(assigned.value + 'T00:00:00'); d.setDate(d.getDate() + 42); end.value = d.toISOString().slice(0, 10); }
+  });
+  scr.querySelector('#pfBack').addEventListener('click', renderProjectView);
+  scr.querySelector('#pfCancel').addEventListener('click', renderProjectView);
+  scr.querySelector('#pfSave').addEventListener('click', () => {
+    dispatch({ type: 'ADD_PROJECT', sourceId: src.id, name: scr.querySelector('#pfName').value.trim() || 'Unnamed project',
+      value: parseFloat(scr.querySelector('#pfValue').value) || 0,
+      assigned: assigned.value, estEnd: end.value || assigned.value,
+      approval: scr.querySelector('#pfApproval').value || null });
+    renderProjectView();
+  });
+}
+
+function screenForecast(scr) {
+  const month = 'Aug 2026';
+  const rows = state.sources.filter(s => s.active).map(forecastRow);
+  const totGross = rows.reduce((a, r) => a + r.grossMxn, 0);
+  const totNet = rows.reduce((a, r) => a + r.net, 0);
+  scr.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <h3 style="margin:0">${t('forecast.month', { m: month })}</h3>
+      <span class="tag accent">${t('forecast.window', { m: 'Aug–Oct' })}</span>
+    </div>
+    <p class="meta" style="margin:4px 0 12px">${t('forecast.sub')}</p>
+    ${state.sources.length === 0 ? '<div class="empty"><div class="big">' + ic('trend', 30) + '</div><p>' + t('forecast.empty') + '</p></div>' : ''}
+    ${rows.map(r => `
+      <div class="card">
+        <div class="headrow">
+          <h3>${r.src.name}</h3><span class="tag accent">${r.src.currency}→MXN ${fmtN(r.rate, 4)}</span>
+        </div>
+        <div class="row"><span class="k">${t('forecast.gross')}</span><span class="v">${fmtM(r.grossMxn)}</span></div>
+        <div class="row"><span class="k">${t('forecast.net', { p: state.bank.convPct, f: fmtM(state.bank.fixedFee) })}</span><span class="v">${fmtM(r.bankNet)}</span></div>
+        <div class="row"><span class="k">${t('forecast.netafter', { p: state.bank.taxPct })}</span><span class="v">${fmtM(r.net)}</span></div>
+        <div class="meta" style="margin-top:8px">${t('forecast.feeds', { list: state.projects.filter(p => p.sourceId === r.src.id && !p.approval).map(p => p.name).join(', ') || '—' })}</div>
+      </div>`).join('')}
+    ${rows.length ? `
+      <div class="card" style="background:var(--accent-soft);border-color:var(--accent)">
+        <div class="row"><span class="k">${t('forecast.total.net')}</span><span class="v">${fmtM(totGross)}</span></div>
+        <div class="row"><span class="k">${t('forecast.total.after')}</span><span class="v">${fmtM(totNet)}</span></div>
+      </div>` : ''}
+    ${state.sources.length > 0 && state.settlements.length === 0 ? '<div class="card" style="border-color:var(--warn)"><span class="tag pending">!</span><p style="margin:8px 0 0;font-size:14px">' + t('forecast.action') + '</p></div>' : ''}
+    <p class="meta" style="margin-top:10px">${t('forecast.fx')}</p>`;
+}
+function screenClose(scr) {
+  const month = 'Aug 2026';
+  const openSources = state.sources.filter(s => !state.settlements.some(st => st.sourceId === s.id));
+  scr.innerHTML = `
+    <h3 style="margin:0 0 2px">${t('close.month', { m: month })}</h3>
+    <p class="meta" style="margin:0 0 12px">${t('close.sub')}</p>
+    ${state.sources.length === 0 ? '<div class="empty"><div class="big">' + ic('check', 30) + '</div><p>' + t('close.empty') + '</p></div>' : ''}
+    ${openSources.length === 0 && state.sources.length > 0 ? '<div class="card"><h3 style="margin:0">' + t('close.alldone') + '</h3><div class="meta">' + t('close.alldone.sub') + '</div></div>' : ''}
+    ${openSources.map(s => `
+      <div class="card" data-close-src="${s.id}">
+        <div class="headrow">
+          <h3>${s.name}</h3><span class="tag accent">${s.currency}</span>
+        </div>
+        <div class="meta">${t('close.fixed', { v: fmtF(s.fixedSalary), c: s.currency })}</div>
+        <div class="meta">${t('close.pick')}</div>
+        ${state.projects.filter(p => p.sourceId === s.id).map(p => `
+          <label style="display:flex;gap:8px;align-items:center;padding:6px 0;font-size:14px;border-bottom:1px dashed var(--line)">
+            <input type="checkbox" class="paidCb" data-pid="${p.id}">
+            <span>${p.name}</span>
+            <span class="meta" style="margin-left:auto">${fmtN(commissionOf(s, p), 2)} ${s.currency}</span>
+          </label>`).join('') || '<div class="meta">' + t('close.noproj') + '</div>'}
+        <div style="margin-top:10px">
+          <div class="field"><label>${t('close.transfers')}</label>
+            <input type="number" min="1" step="1" value="1" class="closeTransfers"></div>
+          <div class="field"><label>${t('close.typed')}</label>
+            <input type="number" step="any" placeholder="e.g. 75400" class="closeTyped"></div>
+          <button class="btn primary" data-close="${s.id}">${t('close.cta', { name: s.name, month })}</button>
+        </div>
+      </div>`).join('')}
+    ${state.settlements.length ? '<h3 style="margin:14px 0 6px">' + t('close.settlements') + '</h3>' + state.settlements.map(st => {
+      const s = state.sources.find(x => x.id === st.sourceId);
+      return `
+      <div class="card">
+        <div class="headrow">
+          <h3>${s.name} — ${st.month}</h3><span class="tag active">${t('close.closed')}</span>
+        </div>
+        <div class="row"><span class="k">${t('close.rate', { c: s.currency })}</span><span class="v">${fmtN(st.derivedRate, 4)}</span></div>
+        <div class="row"><span class="k">${t('close.gross')}</span><span class="v">${fmtM(st.grossMxn)}</span></div>
+        <div class="row"><span class="k">${t('close.net')}</span><span class="v">${fmtM(st.typedMxn)}</span></div>
+        <div class="row"><span class="k">${t('close.tax', { p: state.bank.taxPct })}</span><span class="v">${fmtM(st.tax)}</span></div>
+        <div class="row"><span class="k">${t('close.after')}</span><span class="v">${fmtM(st.netAfterTax)}</span></div>
+      </div>`;
+    }).join('') : ''}
+    ${state.sources.length > 0 && state.settlements.length && state.settlements.length === state.sources.length ? renderSlipHtml() : ''}`;
+  scr.querySelectorAll('[data-close]').forEach(btn => btn.addEventListener('click', () => {
+    const srcId = btn.dataset.close;
+    const card = btn.closest('[data-close-src]');
+    const paid = [...card.querySelectorAll('.paidCb:checked')].map(cb => cb.dataset.pid);
+    dispatch({ type: 'CLOSE_MONTH', sourceId: srcId, month, paidProjectIds: paid,
+      typedMxn: parseFloat(card.querySelector('.closeTyped').value) || 0,
+      transfers: parseInt(card.querySelector('.closeTransfers').value, 10) || 1 });
+  }));
+}
+
+function renderSlipHtml() {
+  const month = 'Aug 2026';
+  const settleRows = state.settlements.map(st => {
+    const s = state.sources.find(x => x.id === st.sourceId);
+    return `<div class="card">
+      <div class="headrow"><h3>${s.name} (${s.currency})</h3></div>
+      <div class="row"><span class="k">${t('slip.fixed')}</span><span class="v">${fmtF(st.foreignPaid)} ${s.currency}</span></div>
+      <div class="row"><span class="k">${t('slip.gross')}</span><span class="v">${fmtM(st.grossMxn)}</span></div>
+      <div class="row"><span class="k">${t('slip.fee', { p: state.bank.convPct, f: fmtM(state.bank.fixedFee), t: st.transfers })}</span><span class="v">${fmtM(st.grossMxn - st.typedMxn)}</span></div>
+      <div class="row"><span class="k">${t('slip.net')}</span><span class="v">${fmtM(st.typedMxn)}</span></div>
+      <div class="row"><span class="k">${t('slip.tax', { p: state.bank.taxPct })}</span><span class="v">${fmtM(st.tax)}</span></div>
+      <div class="row"><span class="k">${t('slip.after')}</span><span class="v">${fmtM(st.netAfterTax)}</span></div>
+    </div>`;
+  }).join('');
+  const totNet = state.settlements.reduce((a, s) => a + s.netAfterTax, 0);
+  return `
+    <h3 style="margin:14px 0 6px">${t('slip.title', { m: month })}</h3>
+    <p class="meta" style="margin:0 0 4px">${t('slip.sub')}</p>
+    <div class="slipdoc">
+      <div class="head"><span>${state.user.displayName} · ${state.user.email}</span><span>${new Date().toLocaleDateString(locale())}</span></div>
+      <div class="body">
+        ${settleRows}
+        <div class="row highlight"><span class="k">${t('slip.total')}</span><span class="v">${fmtM(totNet)}</span></div>
+        <div class="note">${t('slip.note')}</div>
+      </div>
+    </div>`;
+}
+
+function screenMonths(scr) {
+  const mine = myClosedMonths();
+  const shared = state.sharedMonths;
+  const tab = monthFilters.tab;
+  const base = tab === 'mine' ? mine : shared;
+  const srcOpts = tab === 'mine'
+    ? [...new Set(mine.map(m => m.sources).flat())].sort()
+    : [...new Set(shared.map(m => m.source))].sort();
+  const years = [...new Set(base.map(m => m.year))].sort();
+  const monthsNums = [...new Set(base.map(m => m.monthNum))].sort();
+  const q = monthFilters.q.toLowerCase();
+  const filtered = base.filter(m => {
+    if (monthFilters.source !== 'all' && (tab === 'mine' ? !m.sources.includes(monthFilters.source) : m.source !== monthFilters.source)) return false;
+    if (monthFilters.year !== 'all' && m.year !== monthFilters.year) return false;
+    if (monthFilters.month !== 'all' && m.monthNum !== monthFilters.month) return false;
+    if (q) {
+      const hay = (tab === 'mine' ? m.sources.join(' ') : m.source + ' ' + m.owner) + ' ' + monthLabel(m);
+      if (!hay.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+  const sel = (f, v) => monthFilters[f] === v ? ' selected' : '';
+  scr.innerHTML = `
+    <h3 style="margin:0 0 2px">${t('months.title')}</h3>
+    <p class="meta" style="margin:0 0 12px">${t('months.sub')}</p>
+    <div class="card">
+      <div class="seg">
+        <button class="${tab === 'mine' ? 'active' : ''}" data-tab="mine">${t('months.mine')}</button>
+        <button class="${tab === 'shared' ? 'active' : ''}" data-tab="shared">${t('months.shared')}</button>
+      </div>
+      <div class="filterrow search">
+        <input data-f="q" placeholder="${t('months.search')}" value="${monthFilters.q}">
+      </div>
+      <div class="filterrow">
+        <select data-f="source">
+          <option value="all"${sel('source', 'all')}>${t('months.all')} · ${t('sources')}</option>
+          ${srcOpts.map(o => `<option value="${o}"${sel('source', o)}>${o}</option>`).join('')}
+        </select>
+        <select data-f="year">
+          <option value="all"${sel('year', 'all')}>${t('months.all')} · ${t('months.year')}</option>
+          ${years.map(y => `<option value="${y}"${sel('year', y)}>${y}</option>`).join('')}
+        </select>
+      </div>
+      <div class="filterrow">
+        <select data-f="month">
+          <option value="all"${sel('month', 'all')}>${t('months.all')} · ${t('months.month')}</option>
+          ${monthsNums.map(n => `<option value="${n}"${sel('month', n)}>${MONTHS[n]} ${t('months.month')}</option>`).join('')}
+        </select>
+        <div></div>
+      </div>
+    </div>
+    ${filtered.length === 0 ? '<div class="empty"><div class="big">' + ic('calendar', 30) + '</div><p>' + t('months.empty') + '</p></div>' : ''}
+    ${filtered.map(m => tab === 'mine' ? `
+      <div class="card">
+        <div class="monthrow">
+          <div class="left">
+            <div class="t">${monthLabel(m)}</div>
+            <div class="m">${m.sources.join(', ')} · ${t('months.srccount', { n: m.sourceCount })}</div>
+          </div>
+          <div class="right" style="text-align:right">
+            <div style="font-weight:600">${fmtM(m.netTotal)}</div>
+            <div class="meta">${t('months.net')}</div>
+          </div>
+        </div>
+        <div style="margin-top:8px"><span class="tag active">${t('months.avail.slip')}</span></div>
+      </div>` : `
+      <div class="card">
+        <div class="monthrow">
+          <div class="left">
+            <div class="t">${monthLabel(m)} · ${m.source}</div>
+            <div class="m">${t('months.owner')}: ${m.owner}</div>
+          </div>
+          <div class="right" style="text-align:right">
+            <div style="font-weight:600">${fmtM(m.netAfterTax)}</div>
+            <div class="meta">${t('months.net')}</div>
+          </div>
+        </div>
+        <div style="margin-top:8px"><span class="tag accent">${ic('share', 12)} read-only</span></div>
+      </div>`).join('')}`;
+
+  scr.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => {
+    monthFilters.tab = b.dataset.tab; monthFilters.source = 'all'; monthFilters.year = 'all'; monthFilters.month = 'all'; monthFilters.q = '';
+    render();
+  }));
+  scr.querySelectorAll('select[data-f]').forEach(s => s.addEventListener('change', () => {
+    monthFilters[s.dataset.f] = s.value; render();
+  }));
+  const qinput = scr.querySelector('[data-f="q"]');
+  activeQEl = null;
+  if (qinput) {
+    activeQEl = scr;
+    qinput.addEventListener('input', e => { monthFilters.q = e.target.value; render(); });
+  }
+}
+
+function screenShare(scr) {
+  scr.innerHTML = `
+    <h3 style="margin:0 0 2px">${t('share.title')}</h3>
+    <p class="meta" style="margin:0 0 12px">${t('share.sub')}</p>
+    <div class="field">
+      <label>${t('share.source')}</label>
+      <div class="row2">
+        <select id="shareSource">${state.sources.map(s => `<option value="${s.id}">${s.name}</option>`).join('')}</select>
+        <input id="shareEmail" type="email" placeholder="${t('share.email')}">
+      </div>
+    </div>
+    <button class="btn primary" id="shareBtn" style="width:100%">${t('share.send')}</button>
+    <h3 style="margin:16px 0 6px">${t('share.byMe')}</h3>
+    ${state.shares.length === 0 ? '<div class="empty"><div class="big">' + ic('share', 30) + '</div><p>' + t('share.empty') + '</p></div>' : state.shares.map(sh => {
+      const s = state.sources.find(x => x.id === sh.sourceId) || { name: '(deleted source)' };
+      return `<div class="card">
+        <div class="headrow">
+          <h3>${s.name}</h3><span class="tag ${sh.status}">${sh.status}</span>
+        </div>
+        <div class="meta">${sh.email}</div>
+        <div class="meta" style="margin-top:6px">${sh.status === 'pending' ? t('share.pending.sub') : t('share.active.sub')}</div>
+      </div>`;
+    }).join('')}`;
+  scr.querySelector('#shareBtn')?.addEventListener('click', () => {
+    const email = scr.querySelector('#shareEmail').value.trim();
+    const sid = scr.querySelector('#shareSource').value;
+    if (email && sid) dispatch({ type: 'ADD_SHARE', sourceId: sid, email });
+  });
+}function renderState() {
+  const json = JSON.stringify(state, null, 2);
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  els.statebox.innerHTML = esc(json).replace(/"([^"]+)":/g, '<span class="key">"$1":</span>');
+}
+
+/* =========================================================================
+   HARNESS — developer tooling (theme, auth gating, frames, language, steps)
+   ========================================================================= */
+const THEMES = ['system', 'light', 'dark'];
+function applyTheme() {
+  const saved = localStorage.getItem('salary.theme') || 'system';
+  harness.theme = THEMES.includes(saved) ? saved : 'system';
+  const dark = harness.theme === 'dark' || (harness.theme === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  els.themeState.textContent = harness.theme + (dark ? ' (dark)' : ' (light)');
+  els.themeBtn.textContent = dark ? '☾ dark' : '☀ light';
+}
+function cycleTheme() {
+  const next = THEMES[(THEMES.indexOf(harness.theme) + 1) % THEMES.length];
+  localStorage.setItem('salary.theme', next);
+  applyTheme();
+  render();
+}
+
+function applyAuth() {
+  els.authBadge.textContent = harness.authMode === 'dev'
+    ? 'dev — no real OAuth, token+email form'
+    : 'google — real Google Sign-In only';
+}
+
+function applyFrames() {
+  ['desktop', 'mobile'].forEach(k => {
+    els.frames.querySelector('.frame.' + k).style.display =
+      harness.frame === 'both' || harness.frame === k ? '' : 'none';
+  });
+}
+
+function applyLang() {
+  els.langState.textContent = state.user.language;
+}
+
+/* =========================================================================
+   WALKTHROUGH — guided lifecycle
+   ========================================================================= */
+let stepIdx = 0;
+function runStep(i) {
+  stepIdx = i;
+  document.querySelectorAll('#steps .step').forEach((el, n) => {
+    el.classList.toggle('done', n < stepIdx);
+    el.classList.toggle('current', n === stepIdx);
+  });
+  const fn = walkthrough[stepIdx];
+  if (fn) fn();
+}
+const walkthrough = [
+  () => { // 1 dev sign-in
+    harness.authMode = 'dev'; applyAuth();
+    dispatch({ type: 'DEV_LOGIN', email: 'you@example.com' });
+  },
+  () => { // 2 bank & tax settings (first-run gate)
+    dispatch({ type: 'SAVE_BANK', firstTime: true, bank: { fixedFee: 320, convPct: 3, taxPct: 2 } });
+  },
+  () => { // 3 add income source (US company, USD)
+    dispatch({ type: 'ADD_SOURCE', name: 'US company', currency: 'USD', fixedSalary: 5000,
+      commissionMode: 'pct', commissionValue: 10 });
+  },
+  () => { // 4 add income source (SEK, no commission)
+    dispatch({ type: 'ADD_SOURCE', name: 'Swedish co', currency: 'SEK', fixedSalary: 0,
+      commissionMode: 'none', commissionValue: 0 });
+  },
+  () => { // 5 add a project under US company
+    dispatch({ type: 'SELECT_SOURCE', id: state.sources[0].id });
+    dispatch({ type: 'ADD_PROJECT', sourceId: state.sources[0].id, name: 'Website redesign',
+      value: 8000, assigned: '2026-08-01', estEnd: '2026-09-12', approval: null });
+  },
+  () => { // 6 edit income source — rename + drop commission to flat
+    dispatch({ type: 'EDIT_SOURCE', id: state.sources[0].id, name: 'US company LLC',
+      currency: 'USD', fixedSalary: 5000, commissionMode: 'flat', commissionValue: 600 });
+  },
+  () => { // 7 forecast
+    dispatch({ type: 'GOTO_FORE' });
+  },
+  () => { // 8 close Aug for US company LLC (website redesign landed)
+    const s = state.sources.find(x => x.name === 'US company LLC');
+    const p = state.projects.find(x => x.sourceId === s.id && x.name === 'Website redesign');
+    dispatch({ type: 'CLOSE_MONTH', sourceId: s.id, month: 'Aug 2026', paidProjectIds: [p.id],
+      typedMxn: 86500, transfers: 1 });
+  },
+  () => { // 9 close Aug for Swedish co (fixed 0 → only typed)
+    const s = state.sources.find(x => x.name === 'Swedish co');
+    dispatch({ type: 'CLOSE_MONTH', sourceId: s.id, month: 'Aug 2026', paidProjectIds: [],
+      typedMxn: 0, transfers: 1 });
+  },
+  () => { // 10 closed months — mine (both closed → current month appears)
+    dispatch({ type: 'SET_SCREEN', screen: 'months' });
+  },
+  () => { // 11 share with a friend
+    dispatch({ type: 'SET_SCREEN', screen: 'share' });
+    dispatch({ type: 'ADD_SHARE', sourceId: state.sources[0].id, email: 'friend@gmail.com' });
+  },
+  () => { // 12 settings
+    dispatch({ type: 'SET_SCREEN', screen: 'settings' });
+  }
+];
+function renderSteps() {
+  els.steps.innerHTML = walkthrough.map((_, i) => `
+    <div class="step ${i === stepIdx ? 'current' : ''} ${i < stepIdx ? 'done' : ''}" data-step="${i}">
+      <span class="n">${i + 1}</span>
+      <span>
+        <b>${['Sign in (dev)', 'Bank & tax settings', 'Add US company source', 'Add Swedish co source',
+             'Add project', 'Edit income source', 'Forecast', 'Close Aug — US company LLC',
+             'Close Aug — Swedish co', 'Closed months', 'Share with friend', 'Settings'][i]}</b>
+        <div class="note">${['token+email → user created, onboarded=false',
+             'first-run gate: must complete before any other screen',
+             'USD, fixed 5000/mo, commission %10 of project value',
+             'SEK, no fixed salary, no commission',
+             '8,000 USD — feeds the forecast and the close screen',
+             'rename + switch commission %→flat 600/project',
+             'shows per-source rows + totals for the window',
+             'paid: website redesign. typed 86,500 MXN, 1 transfer',
+             'fixed 0 → typed 0; both closed → slip ready',
+             'two subtrees: mine (Jun, Jul, Aug) + shared-with-me',
+             'pending status until they sign in',
+             'global per-user — closed months stay frozen'][i]}</div>
+      </span>
+    </div>`).join('');
+  els.steps.querySelectorAll('.step').forEach(el =>
+    el.addEventListener('click', () => runStep(parseInt(el.dataset.step, 10))));
+}
+
+/* =========================================================================
+   BOOT
+   ========================================================================= */
+(function boot() {
+  els.steps = document.getElementById('steps');
+  els.changed = document.getElementById('changed');
+  els.statebox = document.getElementById('statebox');
+  els.sidebar = document.getElementById('sidebar');
+  els.tabbar = document.getElementById('tabbar');
+  els.appbarD = document.getElementById('appbarD');
+  els.appbarM = document.getElementById('appbarM');
+  els.screenD = document.getElementById('screenD');
+  els.screenM = document.getElementById('screenM');
+  els.frames = document.getElementById('frames');
+  els.authMode = document.getElementById('authMode');
+  els.authBadge = document.getElementById('authBadge');
+  els.themeBtn = document.getElementById('themeBtn');
+  els.themeState = document.getElementById('themeState');
+  els.langBtn = document.getElementById('langBtn');
+  els.langState = document.getElementById('langState');
+  els.frameSel = document.getElementById('frameSel');
+
+  els.authMode.addEventListener('change', () => { harness.authMode = els.authMode.value; applyAuth(); render(); });
+  els.themeBtn.addEventListener('click', cycleTheme);
+  els.langBtn.addEventListener('click', () => dispatch({ type: 'SET_LANG', lang: state.user.language === 'en' ? 'es' : 'en' }));
+  els.frameSel.addEventListener('change', () => { harness.frame = els.frameSel.value; applyFrames(); });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { if (harness.theme === 'system') applyTheme(); });
+
+  renderSteps();
+  applyTheme();
+  applyAuth();
+  applyFrames();
+  applyLang();
+  render();
+  runStep(0);
+})();
+
+</script>
+</body>
+</html>

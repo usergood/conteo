@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+pydantic
+pydantic-settings
+httpx
+jinja2
+itsdangerous
+PyJWT
+cryptography
+email-validator
+weasyprint
