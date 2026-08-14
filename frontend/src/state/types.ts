@@ -141,6 +141,7 @@ export type Action =
   | { type: 'SET_SCREEN'; screen: Screen }
   | { type: 'SELECT_SOURCE'; id: string | null }
   | { type: 'SET_LANG'; lang: Language }
+  | { type: 'SET_GUIDE_STATUS'; guideStatus: GuideStatus }
   | { type: 'SET_MONTH_TAB'; tab: 'mine' | 'shared' }
   | { type: 'SET_MONTH_FILTERS'; filters: Partial<MonthFilters> };
 

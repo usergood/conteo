@@ -35,6 +35,15 @@ export function isLocked(state: AppState): boolean {
   return state.user?.guideStatus === 'pending';
 }
 
+/**
+ * Setup-guide step unlocks (ticket 10), derived from data — not ephemeral
+ * progress. Bank Settings is always unlocked; Income Source needs a bank;
+ * Project needs at least one Income Source.
+ */
+export function guideUnlocks(state: AppState): { bank: boolean; income: boolean; project: boolean } {
+  return { bank: true, income: state.bank !== null, project: state.sources.length >= 1 };
+}
+
 export function reducer(state: AppState = initialState, action: Action): AppState {
   switch (action.type) {
     case 'LOGIN_SUCCESS':
@@ -106,6 +115,8 @@ export function reducer(state: AppState = initialState, action: Action): AppStat
       return state.user
         ? { ...state, user: { ...state.user, language: action.lang } }
         : { ...state }; // new reference so the anonymous pick still re-renders
+    case 'SET_GUIDE_STATUS':
+      return state.user ? { ...state, user: { ...state.user, guideStatus: action.guideStatus } } : state;
     case 'SET_MONTH_TAB':
       return { ...state, monthTab: action.tab, monthFilters: { source: 'all', year: 'all', month: 'all', q: '' } };
     case 'SET_MONTH_FILTERS':

@@ -7,7 +7,7 @@ import { useApp } from '@/components/App';
 
 export function SettingsScreen() {
   const { t } = useI18n();
-  const { state, dispatch } = useApp();
+  const { state, dispatch, openGuide } = useApp();
   const bank = state.bank;
   const first = bank === null;
   const [fee, setFee] = useState(String(bank?.fixedFee ?? 320));
@@ -40,7 +40,17 @@ export function SettingsScreen() {
   };
 
   return (
-    <div className="panel">
+    <>
+      <div className="panel">
+        <div className="headrow">
+          <div>
+            <h3>{t('guide.title')}</h3>
+            <p className="meta">{t('guide.sub')}</p>
+          </div>
+          <button className="btn primary" onClick={openGuide}>{t('settings.guide')}</button>
+        </div>
+      </div>
+      <div className="panel">
       <h3>{first ? t('settings.title.new') : t('settings.title')}</h3>
       <p className="meta">{first ? t('settings.sub.new') : t('settings.sub')}</p>
       <div className="field">
@@ -64,6 +74,7 @@ export function SettingsScreen() {
       </div>
       {err && <div className="error">{err}</div>}
       <button className="btn primary" onClick={save}>{first ? t('settings.save.cont') : t('settings.save')}</button>
-    </div>
+      </div>
+    </>
   );
 }

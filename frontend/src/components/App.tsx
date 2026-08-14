@@ -1,12 +1,13 @@
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { api } from '@/lib/api';
 import { I18nContext, isLanguage, resolveLanguage, translate, type Language } from '@/lib/i18n';
 import { useTheme } from '@/lib/theme';
 import { initialState, reducer } from '@/state/reducer';
 import type { Action, AppState, Screen } from '@/state/types';
 import { LanguageSelector } from '@/components/LanguageSelector';
+import { SetupGuide } from '@/components/SetupGuide';
 import { LoginScreen } from '@/components/screens/Login';
 import { SettingsScreen } from '@/components/screens/Settings';
 import { SourcesScreen } from '@/components/screens/Sources';
@@ -20,6 +21,7 @@ interface AppContextValue {
   dispatch: React.Dispatch<Action>;
   reload: () => Promise<void>;
   notify: (msg: string) => void;
+  openGuide: () => void;
 }
 
 export const AppContext = createContext<AppContextValue>({
@@ -27,6 +29,7 @@ export const AppContext = createContext<AppContextValue>({
   dispatch: () => {},
   reload: async () => {},
   notify: () => {},
+  openGuide: () => {},
 });
 
 export const useApp = () => useContext(AppContext);
@@ -47,6 +50,8 @@ export function App() {
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState('');
   const [defaultLang, setDefaultLang] = useState<Language>('en');
+  const [guideOpen, setGuideOpen] = useState(false);
+  const autoOpenedRef = useRef(false);
   const { theme, cycleTheme } = useTheme();
 
   useEffect(() => {
@@ -59,6 +64,16 @@ export function App() {
         /* default 'en' */
       });
   }, []);
+
+  // Auto-open the setup guide once for new users (guide_status === 'pending').
+  useEffect(() => {
+    if (state.user?.guideStatus === 'pending' && !autoOpenedRef.current) {
+      autoOpenedRef.current = true;
+      setGuideOpen(true);
+    }
+  }, [state.user?.guideStatus]);
+
+  const openGuide = useCallback(() => setGuideOpen(true), []);
 
   const reload = useCallback(async () => {
     try {
@@ -120,7 +135,7 @@ export function App() {
   if (loading) return <main className="app"><div className="meta">…</div></main>;
 
   return (
-    <AppContext.Provider value={{ state, dispatch, reload, notify }}>
+    <AppContext.Provider value={{ state, dispatch, reload, notify, openGuide }}>
       <I18nContext.Provider value={tValue}>
         <header className="appbar">
           <img src="/conteo.svg" className="logo" alt="Conteo" />
@@ -163,6 +178,8 @@ export function App() {
             {screen === 'share' && <ShareScreen />}
           </main>
         </div>
+
+        <SetupGuide open={guideOpen} onClose={() => setGuideOpen(false)} />
       </I18nContext.Provider>
     </AppContext.Provider>
   );

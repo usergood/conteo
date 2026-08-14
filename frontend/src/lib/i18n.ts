@@ -93,6 +93,16 @@ const en: Record<string, string> = {
   'sources.delete.done': 'Source deleted',
   'app.title': 'Conteo',
   'common.logout': 'Sign out', 'common.close': 'Close',
+  'guide.title': 'Setup guide',
+  'guide.sub': 'Three quick steps to get your account ready. Use your Bank Settings and an Income Source, then add a first Project.',
+  'guide.bank': 'Bank Settings',
+  'guide.income': 'Income Source',
+  'guide.project': 'Project',
+  'guide.skip': 'Skip all',
+  'guide.finish': 'Finish',
+  'guide.add.income': 'Add income source',
+  'guide.add.project': 'Add project',
+  'settings.guide': 'Setup guide',
 };
 
 const es: Record<string, string> = {
@@ -161,6 +171,16 @@ const es: Record<string, string> = {
   'sources.delete.done': 'Fuente eliminada',
   'app.title': 'Conteo',
   'common.logout': 'Cerrar sesión', 'common.close': 'Cerrar',
+  'guide.title': 'Guía de configuración',
+  'guide.sub': 'Tres pasos rápidos para dejar tu cuenta lista. Configura tus Ajustes de banco y una Fuente de ingresos, y añade un primer Proyecto.',
+  'guide.bank': 'Ajustes de banco',
+  'guide.income': 'Fuente de ingresos',
+  'guide.project': 'Proyecto',
+  'guide.skip': 'Omitir todo',
+  'guide.finish': 'Finalizar',
+  'guide.add.income': 'Añadir fuente de ingresos',
+  'guide.add.project': 'Añadir proyecto',
+  'settings.guide': 'Guía de configuración',
 };
 
 const dicts: Record<Language, Record<string, string>> = { en, es };

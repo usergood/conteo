@@ -13,6 +13,9 @@ vi.mock('@/lib/api', () => ({
     }),
     logout: vi.fn().mockResolvedValue({ ok: true }),
     saveLanguage: vi.fn().mockResolvedValue({ language: 'es' }),
+    settingsSeed: vi.fn().mockResolvedValue({ currency: 'MXN', fixedFee: 320, convPct: 3, taxPct: 2 }),
+    saveGuideStatus: vi.fn().mockResolvedValue({ guideStatus: 'done' }),
+    saveBank: vi.fn(),
     googleUrl: vi.fn(),
     devLogin: vi.fn(),
   },
@@ -56,5 +59,23 @@ describe('App language selector (ticket 8)', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'English' }));
     await waitFor(() => expect(screen.getByRole('button', { name: 'English' })).toHaveTextContent('🇬🇧 EN'));
     expect(window.localStorage.getItem('conteo-language')).toBe('en');
+  });
+
+  it('auto-opens the setup guide once for a pending user (ticket 10)', async () => {
+    const { api } = await import('@/lib/api');
+    vi.mocked(api.hydrate).mockResolvedValueOnce({
+      user: { sub: 'u1', email: 'you@example.com', displayName: 'You', avatarUrl: null, language: 'en', guideStatus: 'pending' },
+      bank: null,
+      sources: [],
+      projects: [],
+      settlements: [],
+      sharesByMe: [],
+      sharesWithMe: [],
+      months: [],
+      sharedMonths: [],
+      fx: null,
+    });
+    render(<App />);
+    expect(await screen.findByRole('dialog', { name: 'Setup guide' })).toBeInTheDocument();
   });
 });

@@ -294,3 +294,51 @@ table.months th { color: var(--muted); font-weight: 600; font-size: 13px; }
   .page-shell .nav button.active { background: var(--accent-soft); color: var(--accent); }
   .page-shell main.app { padding-bottom: 96px; }
 }
+
+/* -------------------------- setup guide overlay ----------------------- */
+.guide-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(20, 16, 23, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.guide {
+  width: 100%;
+  max-width: 520px;
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+}
+.guide-head { padding: 20px 24px 0; }
+.guide-head h3 { font-size: 19px; }
+.guide-head .meta { margin-top: 4px; }
+.guide-steps { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
+.guide-steps button {
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--muted);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.guide-steps button.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.guide-steps button:disabled { opacity: 0.45; cursor: default; }
+.guide-body { padding: 20px 24px; }
+.guide-body .btn.primary { width: 100%; }
+.guide-body .btn:not(.primary) { width: 100%; }
+.guide-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid var(--line);
+}

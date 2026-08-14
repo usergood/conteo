@@ -71,6 +71,12 @@ export const api = {
       body: JSON.stringify({ language }),
     }),
 
+  saveGuideStatus: (guideStatus: string) =>
+    request<{ guideStatus: string }>('/api/settings/guide-status', {
+      method: 'PUT',
+      body: JSON.stringify({ guideStatus }),
+    }),
+
   listSources: () => request<IncomeSource[]>('/api/sources'),
 
   createSource: (body: Omit<IncomeSource, 'id' | 'active'>) =>

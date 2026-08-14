@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { reducer, initialState, myClosedMonths, visibleMonths, isLocked } from './reducer';
+import { reducer, initialState, myClosedMonths, visibleMonths, isLocked, guideUnlocks } from './reducer';
 import type { AppState } from './types';
 
 function seeded(): AppState {
@@ -100,6 +100,30 @@ describe('appReducer', () => {
   it('SET_LANG switches the per-user language', () => {
     const state = reducer(reducer(initialState, { type: 'LOGIN_SUCCESS', user: { sub: 'u1', email: 'x@y.com', displayName: 'X', avatarUrl: null, language: 'en', guideStatus: 'done' } }), { type: 'SET_LANG', lang: 'es' });
     expect(state.user?.language).toBe('es');
+  });
+
+  it('SET_GUIDE_STATUS updates the user flag (ticket 10)', () => {
+    const logged = reducer(initialState, { type: 'LOGIN_SUCCESS', user: { sub: 'u1', email: 'x@y.com', displayName: 'X', avatarUrl: null, language: 'en', guideStatus: 'pending' } });
+    const state = reducer(logged, { type: 'SET_GUIDE_STATUS', guideStatus: 'done' });
+    expect(state.user?.guideStatus).toBe('done');
+  });
+});
+
+describe('guideUnlocks (ticket 10)', () => {
+  const withUser = reducer(initialState, { type: 'LOGIN_SUCCESS', user: { sub: 'u1', email: 'x@y.com', displayName: 'X', avatarUrl: null, language: 'en', guideStatus: 'pending' } });
+
+  it('bank is always unlocked; income needs a bank; project needs a source', () => {
+    expect(guideUnlocks(withUser)).toEqual({ bank: true, income: false, project: false });
+  });
+
+  it('income unlocks once bank settings exist', () => {
+    const s = reducer(withUser, { type: 'SAVE_BANK', firstTime: true, bank: { currency: 'MXN', fixedFee: 320, convPct: 3, taxPct: 2 } });
+    expect(guideUnlocks(s)).toEqual({ bank: true, income: true, project: false });
+  });
+
+  it('project unlocks once at least one income source exists', () => {
+    const s = reducer(withUser, { type: 'ADD_SOURCE', source: { id: 's1', name: 'US company', currency: 'USD', fixedSalary: 0, commissionMode: 'none', commissionValue: 0, active: true } });
+    expect(guideUnlocks(s).project).toBe(true);
   });
 });
 

@@ -46,7 +46,7 @@ function baseState(over: Partial<AppState>): AppState {
 function renderSources(state: AppState) {
   return render(
     <I18nContext.Provider value={i18n}>
-      <AppContext.Provider value={{ state, dispatch: () => {}, reload: async () => {}, notify: () => {} }}>
+      <AppContext.Provider value={{ state, dispatch: () => {}, reload: async () => {}, notify: () => {}, openGuide: () => {} }}>
         <SourcesScreen />
       </AppContext.Provider>
     </I18nContext.Provider>,
@@ -82,7 +82,7 @@ describe('SourcesScreen bank banner (ticket 07)', () => {
     let lastAction: unknown = null;
     render(
       <I18nContext.Provider value={i18n}>
-        <AppContext.Provider value={{ state: baseState({ bank: null, sources: [] }), dispatch, reload: async () => {}, notify: () => {} }}>
+        <AppContext.Provider value={{ state: baseState({ bank: null, sources: [] }), dispatch, reload: async () => {}, notify: () => {}, openGuide: () => {} }}>
           <SourcesScreen />
         </AppContext.Provider>
       </I18nContext.Provider>,
