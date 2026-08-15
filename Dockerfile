@@ -29,6 +29,7 @@ WORKDIR /app
 COPY backend/requirements.txt backend/requirements.txt
 RUN python -m venv /app/venv && /app/venv/bin/pip install --no-cache-dir -r backend/requirements.txt
 
+COPY VERSION VERSION
 COPY backend/ ./backend/
 
 # Next standalone bundle: server.js + .next/static + public/ (logo, favicon)

@@ -10,6 +10,17 @@ def test_auth_config_returns_default_language(client):
     assert r.json()["defaultLanguage"] == "en"
 
 
+def test_auth_config_returns_version(client, monkeypatch):
+    """The version (from the root VERSION file) is surfaced so the UI can show it."""
+    import app.services.version as version_service
+    from app.routers import auth as auth_router
+
+    monkeypatch.setattr(auth_router.version_service, "current_version", lambda: "9.9.9")
+    r = client.get("/api/auth/config")
+    assert r.status_code == 200
+    assert r.json()["version"] == "9.9.9"
+
+
 def test_dev_login_seeds_language(client):
     r = client.post("/api/auth/dev-login", json={"token": "test-token", "email": "a@b.c", "language": "es"})
     assert r.status_code == 200

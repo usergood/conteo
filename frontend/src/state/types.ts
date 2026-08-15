@@ -176,6 +176,7 @@ export interface AuthConfig {
   googleClientId: string;
   devLoginEnabled: boolean;
   defaultLanguage: string;
+  version: string;
 }
 
 export interface SettingsSeed {

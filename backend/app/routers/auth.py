@@ -19,7 +19,7 @@ from ..auth import (
 )
 from ..config import get_settings
 from ..serializers import user_dict
-from ..services import hydrate, oauth
+from ..services import hydrate, oauth, version as version_service
 from ..services.months import now_iso
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -102,6 +102,7 @@ def auth_config():
         "googleClientId": settings.google_client_id,
         "devLoginEnabled": bool(settings.dev_auth_token),
         "defaultLanguage": _valid_lang(settings.default_language) or "en",
+        "version": version_service.current_version(),
     }
 
 

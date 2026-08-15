@@ -7,6 +7,7 @@ import { useTheme } from '@/lib/theme';
 import { initialState, reducer } from '@/state/reducer';
 import type { Action, AppState, Screen } from '@/state/types';
 import { LanguageSelector } from '@/components/LanguageSelector';
+import { InstallButton } from '@/components/InstallButton';
 import { SetupGuide } from '@/components/SetupGuide';
 import { LoginScreen } from '@/components/screens/Login';
 import { SettingsScreen } from '@/components/screens/Settings';
@@ -50,6 +51,7 @@ export function App() {
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState('');
   const [defaultLang, setDefaultLang] = useState<Language>('en');
+  const [appVersion, setAppVersion] = useState('');
   const [guideOpen, setGuideOpen] = useState(false);
   const autoOpenedRef = useRef(false);
   const { theme, cycleTheme } = useTheme();
@@ -59,6 +61,7 @@ export function App() {
       .authConfig()
       .then((cfg) => {
         if (isLanguage(cfg.defaultLanguage)) setDefaultLang(cfg.defaultLanguage);
+        if (cfg.version) setAppVersion(cfg.version);
       })
       .catch(() => {
         /* default 'en' */
@@ -132,7 +135,15 @@ export function App() {
 
   const screen = state.screen;
 
-  if (loading) return <main className="app"><div className="meta">…</div></main>;
+  if (loading) {
+    return (
+      <div className="splash">
+        <img src="/conteo.svg" className="splash-logo" alt="Conteo" />
+        <div className="splash-dots"><span /><span /><span /></div>
+        {appVersion && <div className="splash-version">v{appVersion}</div>}
+      </div>
+    );
+  }
 
   return (
     <AppContext.Provider value={{ state, dispatch, reload, notify, openGuide }}>
@@ -140,11 +151,15 @@ export function App() {
         <header className="appbar">
           <img src="/conteo.svg" className="logo" alt="Conteo" />
           <div>
-            <div className="title">{tValue.t('app.title')}</div>
+            <div className="title">
+              {tValue.t('app.title')}
+              {appVersion && <span className="version-badge">v{appVersion}</span>}
+            </div>
             {state.user && <div className="who">{state.user.email}</div>}
           </div>
           <span className="spacer" />
           {notice && <span className="meta">{notice}</span>}
+          <InstallButton />
           <LanguageSelector lang={lang} onChange={selectLang} />
           <button className="iconbtn" onClick={cycleTheme}>{theme === 'dark' ? '☀️' : '🌙'}</button>
           {state.user && (

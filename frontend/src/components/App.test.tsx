@@ -10,6 +10,7 @@ vi.mock('@/lib/api', () => ({
       googleClientId: '',
       devLoginEnabled: true,
       defaultLanguage: 'es',
+      version: '0.2.1',
     }),
     logout: vi.fn().mockResolvedValue({ ok: true }),
     saveLanguage: vi.fn().mockResolvedValue({ language: 'es' }),
