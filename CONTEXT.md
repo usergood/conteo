@@ -89,6 +89,9 @@ Catalog code for the invoiced service (e.g., `80101507` IT consultation, `811115
 **SAT Unit Code** (*ClaveUnidad*):
 Catalog code for the unit of measure (e.g., `E48` service unit, `HUR` hours).
 
+**SAT Catalog**:
+The official SAT code lists a CFDI line item draws from: `ClaveProdServ`, `ClaveUnidad`, plus fixed constants `UsoCFDI` (`S01`), `Pais` (`USA`, alpha-3 string), `RegimenFiscal` (`616`), `Moneda` (`USD`/`MXN`), `FormaPago` (`03`). Stored in `sat_product_codes` + `sat_unit_codes` tables, seeded with a curated IT/consulting subset (~22 product, ~12 unit codes); other catalogs are hard-seeded constants with no admin UI. Versioned via `vigencia_inicio`/`vigencia_fin` (active = fin null or >= today); deprecated codes are never hard-deleted so historical CFDIs stay referenceable. CFDI generation *hard-validates* each code exists and is active, rejecting generation otherwise. Seeded manually via migration in v1; an optional later uploader syncs the community `phpcfdi`/`bambucode` mirror.
+
 **e.firma** (*Firma Electrónica Avanzada*):
 The issuer's SAT-issued digital certificate (`.cer`) and private key (`.key` + passphrase) used to sign CFDIs before PAC submission.
 
