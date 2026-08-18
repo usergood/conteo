@@ -13,6 +13,7 @@ def user_dict(row: sqlite3.Row) -> dict:
         "avatarUrl": row["avatar_url"],
         "language": row["language"],
         "guideStatus": row["guide_status"] if row["guide_status"] is not None else "pending",
+        "taxRegime": row["tax_regime"],
     }
 
 

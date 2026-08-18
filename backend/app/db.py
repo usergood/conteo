@@ -22,6 +22,7 @@ def init_db(conn: sqlite3.Connection) -> None:
     conn.executescript(SCHEMA_PATH.read_text())
     conn.commit()
     migrate_guide_status(conn)
+    migrate_tax_regime(conn)
 
 
 def migrate_guide_status(conn: sqlite3.Connection) -> None:
@@ -48,6 +49,20 @@ def migrate_guide_status(conn: sqlite3.Connection) -> None:
         "UPDATE users SET guide_status = 'done' WHERE sub IN (SELECT owner_user_id FROM bank_settings)"
     )
     conn.execute("UPDATE users SET guide_status = 'pending' WHERE guide_status IS NULL")
+    conn.commit()
+
+
+def migrate_tax_regime(conn: sqlite3.Connection) -> None:
+    """Guarded, idempotent migration: add users.tax_regime if missing and
+    backfill existing users to LEGACY_2PCT. New users get the column default
+    from schema.sql. Safe to run on a DB that already has the column."""
+    cols = [row["name"] for row in conn.execute("PRAGMA table_info(users)").fetchall()]
+    if "tax_regime" in cols:
+        conn.execute("UPDATE users SET tax_regime = 'LEGACY_2PCT' WHERE tax_regime IS NULL")
+        conn.commit()
+        return
+    conn.execute("ALTER TABLE users ADD COLUMN tax_regime TEXT NOT NULL DEFAULT 'LEGACY_2PCT'")
+    conn.execute("UPDATE users SET tax_regime = 'LEGACY_2PCT' WHERE tax_regime IS NULL")
     conn.commit()
 
 

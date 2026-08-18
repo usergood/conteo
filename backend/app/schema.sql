@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS users (
   avatar_url    TEXT,
   language      TEXT NOT NULL,  -- no column default; injected on INSERT
   guide_status  TEXT,
+  tax_regime    TEXT NOT NULL DEFAULT 'LEGACY_2PCT',  -- LEGACY_2PCT | RESICO
   created_at    TEXT NOT NULL,
   last_login_at TEXT
 );
@@ -22,17 +23,32 @@ CREATE TABLE IF NOT EXISTS bank_settings (
   updated_at    TEXT NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS income_sources (
+CREATE TABLE IF NOT EXISTS foreign_clients (
   id              TEXT PRIMARY KEY,
   owner_user_id   TEXT NOT NULL REFERENCES users(sub),
-  name            TEXT NOT NULL,
-  currency        TEXT NOT NULL,
-  fixed_salary    REAL NOT NULL DEFAULT 0,
-  commission_mode TEXT NOT NULL DEFAULT 'none',  -- none | pct | flat
-  commission_value REAL NOT NULL DEFAULT 0,
-  active          INTEGER NOT NULL DEFAULT 1,
+  legal_name      TEXT NOT NULL,
+  tax_id          TEXT NOT NULL,             -- foreign tax ID (EIN, etc.)
+  rfc             TEXT,                      -- NULL for pure foreign clients
+  fiscal_regime   TEXT NOT NULL DEFAULT '616',  -- SAT RegimenFiscal constant
+  uso_cfdi        TEXT NOT NULL DEFAULT 'S01',  -- SAT UsoCFDI constant
+  country         TEXT NOT NULL DEFAULT 'USA',  -- ISO 3166-1 alpha-3
+  currency_option TEXT NOT NULL DEFAULT 'USD',  -- per-client default override
   created_at      TEXT NOT NULL,
   updated_at      TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS income_sources (
+  id                TEXT PRIMARY KEY,
+  owner_user_id     TEXT NOT NULL REFERENCES users(sub),
+  foreign_client_id TEXT REFERENCES foreign_clients(id),
+  name              TEXT NOT NULL,
+  currency          TEXT NOT NULL,
+  fixed_salary      REAL NOT NULL DEFAULT 0,
+  commission_mode   TEXT NOT NULL DEFAULT 'none',  -- none | pct | flat
+  commission_value  REAL NOT NULL DEFAULT 0,
+  active            INTEGER NOT NULL DEFAULT 1,
+  created_at        TEXT NOT NULL,
+  updated_at        TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS projects (
