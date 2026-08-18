@@ -59,3 +59,46 @@ _Avoid_: Projection, estimate, pipeline
 **Share**:
 A read-only grant by an income source's owner to another user (by Google email), covering that source's months, settlements, and PDF slips. The sharee sees the source's data only while the share is `active`; sharing never copies or mutates the owner's data.
 _Avoid_: Grant, permission, access
+
+---
+
+## CFDI & SAT (Mexican Tax Compliance)
+
+**CFDI 4.0** (*Comprobante Fiscal Digital por Internet*):
+The SAT-mandated electronic invoice format (XML + digital seal) for all fiscal transactions in Mexico. Version 4.0 is current.
+
+**PAC** (*Proveedor Autorizado de Certificación*):
+SAT-authorized third party that validates, signs, and stamps CFDIs. The app generates unsigned CFDI XML; PAC integration is abstracted behind an interface.
+
+**Tax Regime** (*Régimen Fiscal*):
+The issuer's tax classification determining rates and obligations. **RESICO** (*Régimen Simplificado de Confianza*) is the initial regime (1.0–2.5% ISR on gross revenue). The domain model supports multiple regimes via a strategy pattern — not hardcoded.
+
+**Foreign Recipient** (*Receptor Extranjero*):
+A non-Mexican client invoiced via CFDI. Uses generic RFC `XEXX010101000`, fiscal regime `616` (*Sin obligaciones fiscales*), CFDI usage `S01` (*Sin efectos fiscales*), and `0% IVA` under export of services (Art. 29 LIVA).
+
+**Currency Option**:
+Two invoicing strategies for USD income:
+- **Option A (USD Direct)**: Invoice in USD with Banxico DOF exchange rate (`TipoCambio`); SAT sees MXN equivalence.
+- **Option B (MXN Post-Settlement)**: Invoice in MXN for exact bank-net deposited; `Moneda: MXN`, `TipoCambio: 1`. Must be same fiscal month as deposit.
+
+**SAT Product/Service Code** (*ClaveProdServ*):
+Catalog code for the invoiced service (e.g., `80101507` IT consultation, `81111508` App development).
+
+**SAT Unit Code** (*ClaveUnidad*):
+Catalog code for the unit of measure (e.g., `E48` service unit, `HUR` hours).
+
+**e.firma** (*Firma Electrónica Avanzada*):
+The issuer's SAT-issued digital certificate (`.cer`) and private key (`.key` + passphrase) used to sign CFDIs before PAC submission.
+
+**Monthly Tax Workflow**:
+Per-calendar-month cycle: ingest payments → generate CFDIs → calculate RESICO ISR by gross MXN brackets → generate pre-filled SAT declaration payload for portal filing → audit trail.
+
+**RESICO ISR Brackets** (monthly gross MXN):
+- ≤ 25,000: 1.00%
+- ≤ 50,000: 1.10%
+- ≤ 83,333: 1.50%
+- ≤ 166,666: 2.00%
+- ≤ 2,916,666: 2.50%
+
+**Issuer Configuration** (*Configuración del Emisor*):
+Pre-configured issuer data: RFC, legal name, fiscal regime, postal code, CSD certificate/key, bank details, tax declaration text. Used as defaults on every CFDI.
