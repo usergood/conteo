@@ -109,4 +109,7 @@ Per-calendar-month cycle: ingest payments → generate CFDIs → calculate RESIC
 - ≤ 2,916,666: 2.50%
 
 **Issuer Configuration** (*Configuración del Emisor*):
-Pre-configured issuer data: RFC, legal name, fiscal regime, postal code, CSD certificate/key, bank details, tax declaration text. Used as defaults on every CFDI.
+Pre-configured per-user issuer data: RFC, legal name, fiscal regime, postal code, CSD certificate/key, bank details, tax declaration text. Used as defaults on every CFDI. Strictly scoped per user (accessed only within the owner's scope), consistent with the per-user `Bank Settings` and `Share` model.
+
+**CSD Encryption** (*Cifrado de CSD*):
+The issuer's e.firma CSD is persisted encrypted at rest (AES-256-GCM) under a key derived from *two* secrets — the app's master key (secret store) and the issuer's e.firma passphrase — so neither the app alone nor a leaked database can decrypt it. The passphrase is the single e.firma password: it both derives the storage key and unlocks the private key at signing, is supplied only to open an in-memory stamping session, and is never persisted (zeroized at session end). See ADR-0003.
