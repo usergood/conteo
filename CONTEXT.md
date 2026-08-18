@@ -27,7 +27,7 @@ _Avoid_: Sign-off, acceptance, green light
 ## Months & Money
 
 **Salary Month**:
-A calendar month aggregating each source's fixed salary plus commissions from projects selected as paid that month. Holds its own final fixed-salary values. Fully closed only when every active income source that month is closed; closed months are immutable.
+A calendar month aggregating each source's fixed salary plus commissions from projects selected as paid that month. Holds its own final fixed-salary values. Fully closed only when every active income source that month is closed; closed months are immutable. "Close" means **end of receiving** for that month, not end of the calendar month — once closed, no CFDI may ever be issued for it again (the CFDI set is frozen; taxes for that month are computed from that frozen set).
 _Avoid_: Pay period, pay run
 
 **Settlement**:
@@ -81,10 +81,17 @@ A non-Mexican client invoiced via CFDI. Uses generic RFC `XEXX010101000`, fiscal
 
 **Currency Option**:
 Two invoicing strategies for USD income:
-- **Option A (USD Direct)**: Invoice in USD with Banxico DOF exchange rate (`TipoCambio`); SAT sees MXN equivalence.
-- **Option B (MXN Post-Settlement)**: Invoice in MXN for exact bank-net deposited; `Moneda: MXN`, `TipoCambio: 1`. Must be same fiscal month as deposit.
+- **Option A (USD Direct)**: Invoice in USD with Banxico DOF exchange rate (`TipoCambio`); SAT sees MXN equivalence. Issued at service completion in the source's month; if payment lands in a later month it is issued as **PPD** (MetodoPago PPD, FormaPago 99 "Por definir") and a **Complemento de Pago** receipt is emitted when payment arrives.
+- **Option B (MXN Post-Settlement)**: Invoice in MXN for exact bank-net deposited; `Moneda: MXN`, `TipoCambio: 1`. Must be same fiscal month as deposit — naturally **PUE** (payment received in the same month as issuance).
 
 Each Foreign Client stores a `currency_option` default; individual invoices may override it at creation without changing the stored default.
+
+**CFDI Invoice** (*Factura CFDI*):
+One CFDI 4.0 invoice per foreign client per month, generated from a source-month. Carries its own lifecycle (draft → stamped → cancelled): drafts are freely editable, a stamped CFDI changes only by PAC cancellation + fresh generation, and corrections are allowed until the month closes. Issuance is gated per source: it must precede the source's month-close.
+_Avoid_: Comprobante, recibo, slip
+
+**Complemento de Pago** (*Recibo Electrónico de Pago*, REP):
+The SAT-required payment receipt complement issued when a PPD CFDI's payment actually arrives — within the 5th natural day of the month after the payment month (RMF 2026 2.7.1.32). The income CFDI is issued at operation time; the REP records each payment received against it.
 
 **SAT Product/Service Code** (*ClaveProdServ*):
 Catalog code for the invoiced service (e.g., `80101507` IT consultation, `81111508` App development).
