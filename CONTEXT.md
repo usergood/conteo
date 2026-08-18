@@ -70,6 +70,9 @@ The SAT-mandated electronic invoice format (XML + digital seal) for all fiscal t
 **PAC** (*Proveedor Autorizado de Certificación*):
 SAT-authorized third party that validates, signs, and stamps CFDIs. The app generates unsigned CFDI XML; PAC integration is abstracted behind an interface.
 
+**CFDI Generation**:
+The app builds the unsigned-but-issuer-signed CFDI XML itself (PAC-agnostic) using hand-rolled **Pydantic models** mirroring CFDI 4.0, serialized with `lxml`; `satcfdi` is kept only as a test *reference oracle*, not a runtime dependency. CI gates on XSD validation (`cfdv40.xsd` plus mirrored `catCFDI.xsd` + `tdCFDI.xsd`). Only the base `ingreso` CFDI is generated — complementos like Nómina/Pagos/Carta Porte are out of scope, and the PAC appends the `tfd` TimbreFiscalDigital at stamping. Namespaces use the `cfdi:` prefix with the required `xsi:schemaLocation`; `Sello`/`Certificado`/`NoCertificado` come from the issuer CSD at signing time (a separate, PAC-agnostic step via cadena-original XSLT + RSA-SHA256). Golden XML fixtures guard regression.
+
 **Tax Regime** (*Régimen Fiscal*):
 The issuer's tax classification determining rates and obligations. **RESICO** (*Régimen Simplificado de Confianza*) is the initial regime (1.0–2.5% ISR on gross revenue). The domain model supports multiple regimes via a strategy pattern — not hardcoded.
 
