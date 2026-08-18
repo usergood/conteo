@@ -5,7 +5,7 @@ A multi-user personal-finance app for an IT consultant with customers or employe
 ## Income & Projects
 
 **Income Source**:
-A counterparty that pays income in one currency (e.g. "US company" in USD). Carries an optional fixed salary, a commission mode, an incoming currency, and linked projects.
+A counterparty that pays income in one currency (e.g. "US company" in USD). Carries an optional fixed salary, a commission mode, an incoming currency, and linked projects. A foreign payer is flagged `is_foreign` and linked to its Foreign Client.
 _Avoid_: Employer, client, account
 
 **Fixed Salary**:
@@ -73,13 +73,15 @@ SAT-authorized third party that validates, signs, and stamps CFDIs. The app gene
 **Tax Regime** (*Régimen Fiscal*):
 The issuer's tax classification determining rates and obligations. **RESICO** (*Régimen Simplificado de Confianza*) is the initial regime (1.0–2.5% ISR on gross revenue). The domain model supports multiple regimes via a strategy pattern — not hardcoded.
 
-**Foreign Recipient** (*Receptor Extranjero*):
-A non-Mexican client invoiced via CFDI. Uses generic RFC `XEXX010101000`, fiscal regime `616` (*Sin obligaciones fiscales*), CFDI usage `S01` (*Sin efectos fiscales*), and `0% IVA` under export of services (Art. 29 LIVA).
+**Foreign Client** (*ForeignClient*, *Receptor Extranjero*):
+A non-Mexican client invoiced via CFDI. Uses generic RFC `XEXX010101000`, fiscal regime `616` (*Sin obligaciones fiscales*), CFDI usage `S01` (*Sin efectos fiscales*), and `0% IVA` under export of services (Art. 29 LIVA). Maps one-to-one to an IncomeSource flagged `is_foreign`; `legal_name` and `tax_id` (EIN) are user-editable while `rfc`, `fiscal_regime`, `uso_cfdi`, and `country` are locked to the foreign-client generics. Carries a `currency_option` default that individual invoices may override.
 
 **Currency Option**:
 Two invoicing strategies for USD income:
 - **Option A (USD Direct)**: Invoice in USD with Banxico DOF exchange rate (`TipoCambio`); SAT sees MXN equivalence.
 - **Option B (MXN Post-Settlement)**: Invoice in MXN for exact bank-net deposited; `Moneda: MXN`, `TipoCambio: 1`. Must be same fiscal month as deposit.
+
+Each Foreign Client stores a `currency_option` default; individual invoices may override it at creation without changing the stored default.
 
 **SAT Product/Service Code** (*ClaveProdServ*):
 Catalog code for the invoiced service (e.g., `80101507` IT consultation, `81111508` App development).
