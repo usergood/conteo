@@ -14,6 +14,7 @@ def user_dict(row: sqlite3.Row) -> dict:
         "language": row["language"],
         "guideStatus": row["guide_status"] if row["guide_status"] is not None else "pending",
         "taxRegime": row["tax_regime"],
+        "issuerRfc": row["issuer_rfc"],
     }
 
 
@@ -35,6 +36,7 @@ def source_dict(row: sqlite3.Row) -> dict:
         "commissionMode": row["commission_mode"],
         "commissionValue": row["commission_value"],
         "active": bool(row["active"]),
+        "foreignClientId": row["foreign_client_id"],
     }
 
 
@@ -67,4 +69,19 @@ def settlement_dict(row: sqlite3.Row) -> dict:
         "netAfterTax": row["net_after_tax"],
         "paidProjectIds": json.loads(row["paid_project_ids"]),
         "commissionBreakdown": json.loads(row["commission_breakdown"]),
+    }
+
+
+def fc_dict(row: sqlite3.Row) -> dict:
+    return {
+        "id": row["id"],
+        "legalName": row["legal_name"],
+        "taxId": row["tax_id"],
+        "rfc": row["rfc"],
+        "fiscalRegime": row["fiscal_regime"],
+        "usoCfdi": row["uso_cfdi"],
+        "country": row["country"],
+        "currencyOption": row["currency_option"],
+        "createdAt": row["created_at"],
+        "updatedAt": row["updated_at"],
     }

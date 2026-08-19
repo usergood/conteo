@@ -1,0 +1,5 @@
+# Tax computed by a TaxRegimeStrategy pattern (RESICO first, LEGACY_2PCT default)
+
+Taxes are computed per user per month by a `TaxRegimeStrategy` chosen through a `TaxRegimeRegistry` keyed on app-level regime codes (`RESICO`, `LEGACY_2PCT`). Each user holds exactly one `tax_regime` on their record, defaulting to `LEGACY_2PCT` and chosen during bank configuration — there is no separate feature flag. Strategies receive a `TaxInputs` context object (gross MXN, bank-net MXN, CFDI count, legacy tax %) rather than a bare `gross_mxn`, because LEGACY_2PCT taxes `bank_net × rate` while RESICO taxes bracketed gross MXN — the context object lets each regime read only what it needs and keeps today's settlement math unchanged. Tax-layer arithmetic uses `Decimal` (fiscal precision) while the rest of the app stays `float`. The monthly tax summary records the `regime_code` used per (user, month) as an audit trail; months are never recomputed under a new regime. The SAT's `RegimenFiscal` claves (`621` for RESICO) are resolved separately at CFDI generation, not as registry keys.
+
+Status: accepted

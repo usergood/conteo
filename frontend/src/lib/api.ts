@@ -1,15 +1,20 @@
 import type {
   AuthConfig,
   BankSettings,
+  CFDIInvoice,
   CloseView,
   CurrencyOption,
+  ForeignClient,
   ForecastResponse,
   HydratePayload,
   IncomeSource,
   Project,
+  SatProductCode,
+  SatUnitCode,
   SettingsSeed,
   Settlement,
   Share,
+  TaxSummary,
   User,
 } from '@/state/types';
 
@@ -128,4 +133,71 @@ export const api = {
   undismissShare: (id: string) => request<Share>(`/api/shares/${id}/undismiss`, { method: 'POST' }),
 
   slipUrl: (month: string) => `/api/months/${encodeURIComponent(month)}/slip`,
+
+  /* ---------------------------- Foreign clients ---------------------------- */
+
+  listForeignClients: () => request<ForeignClient[]>('/api/foreign-clients'),
+
+  createForeignClient: (body: { legalName: string; taxId: string; country?: string; currencyOption?: string }) =>
+    request<ForeignClient>('/api/foreign-clients', { method: 'POST', body: JSON.stringify(body) }),
+
+  updateForeignClient: (id: string, body: { legalName?: string; taxId?: string; currencyOption?: string }) =>
+    request<ForeignClient>(`/api/foreign-clients/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+
+  deleteForeignClient: (id: string) => request<{ ok: boolean }>(`/api/foreign-clients/${id}`, { method: 'DELETE' }),
+
+  /* --------------------------------- CFDI ---------------------------------- */
+
+  listCfdiInvoices: (month?: string) =>
+    request<CFDIInvoice[]>(`/api/cfdi/invoices${month ? `?month=${encodeURIComponent(month)}` : ''}`),
+
+  createCfdiInvoice: (body: {
+    sourceId: string;
+    foreignClientId: string;
+    month: string;
+    currencyOption?: string;
+    amountMxn: number;
+    tipoCambio?: number;
+    serie?: string;
+    folio?: string;
+  }) => request<CFDIInvoice>('/api/cfdi/invoices', { method: 'POST', body: JSON.stringify(body) }),
+
+  updateCfdiInvoice: (id: string, body: {
+    amountMxn?: number;
+    tipoCambio?: number;
+    serie?: string;
+    folio?: string;
+    currencyOption?: string;
+  }) => request<CFDIInvoice>(`/api/cfdi/invoices/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
+
+  previewCfdiInvoice: (id: string) =>
+    request<{ xml: string }>(`/api/cfdi/invoices/${id}/preview`, { method: 'POST' }),
+
+  stampCfdiInvoice: (id: string) =>
+    request<CFDIInvoice>(`/api/cfdi/invoices/${id}/stamp`, { method: 'POST' }),
+
+  cancelCfdiInvoice: (id: string) =>
+    request<{ ok: boolean; action: string }>(`/api/cfdi/invoices/${id}`, { method: 'DELETE' }),
+
+  /* ---------------------------------- SAT ---------------------------------- */
+
+  listSatProductCodes: () => request<SatProductCode[]>('/api/sat/product-codes'),
+  listSatUnitCodes: () => request<SatUnitCode[]>('/api/sat/unit-codes'),
+
+  /* --------------------------------- Tax ----------------------------------- */
+
+  getTaxSummary: (month: string) => request<TaxSummary>(`/api/tax/summary/${encodeURIComponent(month)}`),
+
+  computeTaxSummary: (month: string) =>
+    request<TaxSummary>(`/api/tax/summary/${encodeURIComponent(month)}/compute`, { method: 'POST' }),
+
+  /* ----------------------------- Settings new ------------------------------ */
+
+  saveTaxRegime: (taxRegime: string) =>
+    request<{ taxRegime: string }>('/api/settings/tax-regime', { method: 'PUT', body: JSON.stringify({ taxRegime }) }),
+
+  getIssuerConfig: () => request<{ issuerRfc: string | null }>('/api/settings/issuer'),
+
+  saveIssuerConfig: (issuerRfc: string) =>
+    request<{ issuerRfc: string | null }>('/api/settings/issuer', { method: 'PUT', body: JSON.stringify({ issuerRfc }) }),
 };

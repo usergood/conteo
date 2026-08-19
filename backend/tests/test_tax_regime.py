@@ -149,27 +149,23 @@ class TestTaxRegimeRegistry:
 # ---------------------------------------------------------------------------
 
 class TestTaxRegimeSchema:
-    def test_new_user_gets_default(self, app):
-        conn = sqlite3.connect(app.state.db_path)
-        conn.execute(
+    def test_new_user_gets_default(self, db_conn):
+        db_conn.execute(
             "INSERT INTO users (sub, email, display_name, language, created_at) VALUES (?, ?, ?, ?, ?)",
             ("u-test", "test@test.com", "Test", "en", "2026-01-01T00:00:00Z"),
         )
-        conn.commit()
-        row = conn.execute("SELECT tax_regime FROM users WHERE sub = 'u-test'").fetchone()
-        conn.close()
+        db_conn.commit()
+        row = db_conn.execute("SELECT tax_regime FROM users WHERE sub = 'u-test'").fetchone()
         assert row["tax_regime"] == "LEGACY_2PCT"
 
-    def test_can_set_resico(self, app):
-        conn = sqlite3.connect(app.state.db_path)
-        conn.execute(
+    def test_can_set_resico(self, db_conn):
+        db_conn.execute(
             "INSERT INTO users (sub, email, display_name, language, tax_regime, created_at) "
             "VALUES (?, ?, ?, ?, ?, ?)",
             ("u-test", "test@test.com", "Test", "en", "RESICO", "2026-01-01T00:00:00Z"),
         )
-        conn.commit()
-        row = conn.execute("SELECT tax_regime FROM users WHERE sub = 'u-test'").fetchone()
-        conn.close()
+        db_conn.commit()
+        row = db_conn.execute("SELECT tax_regime FROM users WHERE sub = 'u-test'").fetchone()
         assert row["tax_regime"] == "RESICO"
 
 
@@ -178,78 +174,70 @@ class TestTaxRegimeSchema:
 # ---------------------------------------------------------------------------
 
 class TestForeignClientsSchema:
-    def test_create_foreign_client(self, app):
-        conn = sqlite3.connect(app.state.db_path)
-        conn.execute(
+    def test_create_foreign_client(self, db_conn):
+        db_conn.execute(
             "INSERT INTO users (sub, email, display_name, language, created_at) VALUES (?, ?, ?, ?, ?)",
             ("u-owner", "owner@test.com", "Owner", "en", "2026-01-01T00:00:00Z"),
         )
-        conn.execute(
+        db_conn.execute(
             "INSERT INTO foreign_clients (id, owner_user_id, legal_name, tax_id, country, created_at, updated_at) "
             "VALUES (?, ?, ?, ?, ?, ?, ?)",
             ("fc-test", "u-owner", "Acme Corp", "12-3456789", "USA", "2026-01-01T00:00:00Z", "2026-01-01T00:00:00Z"),
         )
-        conn.commit()
-        row = conn.execute("SELECT * FROM foreign_clients WHERE id = 'fc-test'").fetchone()
-        conn.close()
+        db_conn.commit()
+        row = db_conn.execute("SELECT * FROM foreign_clients WHERE id = 'fc-test'").fetchone()
         assert row["legal_name"] == "Acme Corp"
         assert row["tax_id"] == "12-3456789"
         assert row["country"] == "USA"
         assert row["fiscal_regime"] == "616"
         assert row["uso_cfdi"] == "S01"
 
-    def test_income_source_can_link_to_foreign_client(self, app):
-        conn = sqlite3.connect(app.state.db_path)
-        conn.execute(
+    def test_income_source_can_link_to_foreign_client(self, db_conn):
+        db_conn.execute(
             "INSERT INTO users (sub, email, display_name, language, created_at) VALUES (?, ?, ?, ?, ?)",
             ("u-owner", "owner@test.com", "Owner", "en", "2026-01-01T00:00:00Z"),
         )
-        conn.execute(
+        db_conn.execute(
             "INSERT INTO foreign_clients (id, owner_user_id, legal_name, tax_id, country, created_at, updated_at) "
             "VALUES (?, ?, ?, ?, ?, ?, ?)",
             ("fc-test", "u-owner", "Acme Corp", "12-3456789", "USA", "2026-01-01T00:00:00Z", "2026-01-01T00:00:00Z"),
         )
-        conn.execute(
+        db_conn.execute(
             "INSERT INTO income_sources (id, owner_user_id, foreign_client_id, name, currency, created_at, updated_at) "
             "VALUES (?, ?, ?, ?, ?, ?, ?)",
             ("s-test", "u-owner", "fc-test", "Consulting", "USD", "2026-01-01T00:00:00Z", "2026-01-01T00:00:00Z"),
         )
-        conn.commit()
-        row = conn.execute("SELECT foreign_client_id FROM income_sources WHERE id = 's-test'").fetchone()
-        conn.close()
+        db_conn.commit()
+        row = db_conn.execute("SELECT foreign_client_id FROM income_sources WHERE id = 's-test'").fetchone()
         assert row["foreign_client_id"] == "fc-test"
 
-    def test_income_source_without_foreign_client(self, app):
-        conn = sqlite3.connect(app.state.db_path)
-        conn.execute(
+    def test_income_source_without_foreign_client(self, db_conn):
+        db_conn.execute(
             "INSERT INTO users (sub, email, display_name, language, created_at) VALUES (?, ?, ?, ?, ?)",
             ("u-owner", "owner@test.com", "Owner", "en", "2026-01-01T00:00:00Z"),
         )
-        conn.execute(
+        db_conn.execute(
             "INSERT INTO income_sources (id, owner_user_id, name, currency, created_at, updated_at) "
             "VALUES (?, ?, ?, ?, ?, ?)",
             ("s-test", "u-owner", "Consulting", "USD", "2026-01-01T00:00:00Z", "2026-01-01T00:00:00Z"),
         )
-        conn.commit()
-        row = conn.execute("SELECT foreign_client_id FROM income_sources WHERE id = 's-test'").fetchone()
-        conn.close()
+        db_conn.commit()
+        row = db_conn.execute("SELECT foreign_client_id FROM income_sources WHERE id = 's-test'").fetchone()
         assert row["foreign_client_id"] is None
 
-    def test_cascade_delete_owner(self, app):
-        conn = sqlite3.connect(app.state.db_path)
-        conn.execute(
+    def test_cascade_delete_owner(self, db_conn):
+        db_conn.execute(
             "INSERT INTO users (sub, email, display_name, language, created_at) VALUES (?, ?, ?, ?, ?)",
             ("u-owner", "owner@test.com", "Owner", "en", "2026-01-01T00:00:00Z"),
         )
-        conn.execute(
+        db_conn.execute(
             "INSERT INTO foreign_clients (id, owner_user_id, legal_name, tax_id, country, created_at, updated_at) "
             "VALUES (?, ?, ?, ?, ?, ?, ?)",
             ("fc-test", "u-owner", "Acme Corp", "12-3456789", "USA", "2026-01-01T00:00:00Z", "2026-01-01T00:00:00Z"),
         )
-        conn.commit()
+        db_conn.commit()
         # Delete user — FK on foreign_clients should prevent or cascade
         # Since the FK is NOT ON DELETE CASCADE, this should fail
         with pytest.raises(sqlite3.IntegrityError):
-            conn.execute("DELETE FROM users WHERE sub = 'u-owner'")
-            conn.commit()
-        conn.close()
+            db_conn.execute("DELETE FROM users WHERE sub = 'u-owner'")
+            db_conn.commit()

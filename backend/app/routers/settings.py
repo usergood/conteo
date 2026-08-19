@@ -1,4 +1,4 @@
-"""Bank settings + language + guide status (tickets 03, 07, 10, 11)."""
+"""Bank settings + language + guide status + tax regime + issuer config (tickets 03, 07, 10, 11)."""
 
 import sqlite3
 from fastapi import APIRouter, Depends, HTTPException
@@ -78,3 +78,48 @@ def save_guide_status(body: GuideStatusBody, conn: sqlite3.Connection = Depends(
     conn.commit()
     row = conn.execute("SELECT guide_status FROM users WHERE sub = ?", (user.sub,)).fetchone()
     return {"guideStatus": row["guide_status"]}
+
+
+# ---------------------------------------------------------------------------
+# Tax regime settings (decision #29)
+# ---------------------------------------------------------------------------
+
+VALID_REGIMES = {"RESICO", "LEGACY_2PCT"}
+
+
+class TaxRegimeBody(BaseModel):
+    taxRegime: str
+
+
+@router.put("/tax-regime")
+def save_tax_regime(body: TaxRegimeBody, conn: sqlite3.Connection = Depends(get_db_conn), user=Depends(require_user)):
+    if body.taxRegime not in VALID_REGIMES:
+        raise HTTPException(status_code=422, detail="invalid_tax_regime")
+    conn.execute("UPDATE users SET tax_regime = ? WHERE sub = ?", (body.taxRegime, user.sub))
+    conn.commit()
+    row = conn.execute("SELECT tax_regime FROM users WHERE sub = ?", (user.sub,)).fetchone()
+    return {"taxRegime": row["tax_regime"]}
+
+
+# ---------------------------------------------------------------------------
+# Issuer config settings
+# ---------------------------------------------------------------------------
+
+
+class IssuerBody(BaseModel):
+    issuerRfc: str | None = None
+
+
+@router.get("/issuer")
+def get_issuer_config(conn: sqlite3.Connection = Depends(get_db_conn), user=Depends(require_user)):
+    row = conn.execute("SELECT issuer_rfc FROM users WHERE sub = ?", (user.sub,)).fetchone()
+    return {"issuerRfc": row["issuer_rfc"]}
+
+
+@router.put("/issuer")
+def save_issuer_config(body: IssuerBody, conn: sqlite3.Connection = Depends(get_db_conn), user=Depends(require_user)):
+    rfc = body.issuerRfc.strip() if body.issuerRfc else None
+    conn.execute("UPDATE users SET issuer_rfc = ? WHERE sub = ?", (rfc, user.sub))
+    conn.commit()
+    row = conn.execute("SELECT issuer_rfc FROM users WHERE sub = ?", (user.sub,)).fetchone()
+    return {"issuerRfc": row["issuer_rfc"]}

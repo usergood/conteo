@@ -495,3 +495,67 @@ def test_shared_month_only_when_closed_and_fully_covered(client, onboard, login)
     shared = client.get("/api/months/shared").json()
     assert len(shared) == 2
     assert client.get("/api/months/2026-08/slip").status_code == 200
+
+
+# ---------------------------------------------------------------------------
+# Tax regime settings (decision #29)
+# ---------------------------------------------------------------------------
+
+
+def test_get_tax_regime_default(client, login):
+    login()
+    me = client.get("/api/auth/me").json()
+    assert me["user"]["taxRegime"] == "LEGACY_2PCT"
+
+
+def test_set_tax_regime_resico(client, login):
+    login()
+    r = client.put("/api/settings/tax-regime", json={"taxRegime": "RESICO"})
+    assert r.status_code == 200
+    assert r.json()["taxRegime"] == "RESICO"
+    me = client.get("/api/auth/me").json()
+    assert me["user"]["taxRegime"] == "RESICO"
+
+
+def test_set_tax_regime_invalid(client, login):
+    login()
+    r = client.put("/api/settings/tax-regime", json={"taxRegime": "INVALID"})
+    assert r.status_code == 422
+
+
+def test_set_tax_regime_back_to_legacy(client, login):
+    login()
+    client.put("/api/settings/tax-regime", json={"taxRegime": "RESICO"})
+    r = client.put("/api/settings/tax-regime", json={"taxRegime": "LEGACY_2PCT"})
+    assert r.status_code == 200
+    assert r.json()["taxRegime"] == "LEGACY_2PCT"
+
+
+# ---------------------------------------------------------------------------
+# Issuer config settings
+# ---------------------------------------------------------------------------
+
+
+def test_get_issuer_config_default(client, login):
+    login()
+    r = client.get("/api/settings/issuer")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["issuerRfc"] is None
+
+
+def test_set_issuer_rfc(client, login):
+    login()
+    r = client.put("/api/settings/issuer", json={"issuerRfc": "TECF850101ABC"})
+    assert r.status_code == 200
+    assert r.json()["issuerRfc"] == "TECF850101ABC"
+    me = client.get("/api/auth/me").json()
+    assert me["user"]["issuerRfc"] == "TECF850101ABC"
+
+
+def test_set_issuer_rfc_empty_clears(client, login):
+    login()
+    client.put("/api/settings/issuer", json={"issuerRfc": "TECF850101ABC"})
+    r = client.put("/api/settings/issuer", json={"issuerRfc": ""})
+    assert r.status_code == 200
+    assert r.json()["issuerRfc"] is None

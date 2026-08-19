@@ -35,6 +35,7 @@ class SourceBody(BaseModel):
     fixedSalary: float = 0
     commissionMode: str = "none"
     commissionValue: float = 0
+    foreignClientId: str | None = None
 
 
 @router.get("/sources")
@@ -61,9 +62,9 @@ def create_source(
     source_id = "s" + secrets.token_hex(8)
     now = now_iso()
     conn.execute(
-        "INSERT INTO income_sources (id, owner_user_id, name, currency, fixed_salary, commission_mode, "
-        "commission_value, active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)",
-        (source_id, user.sub, body.name.strip(), body.currency.upper(), body.fixedSalary,
+        "INSERT INTO income_sources (id, owner_user_id, foreign_client_id, name, currency, fixed_salary, commission_mode, "
+        "commission_value, active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?)",
+        (source_id, user.sub, body.foreignClientId, body.name.strip(), body.currency.upper(), body.fixedSalary,
          body.commissionMode, body.commissionValue, now, now),
     )
     conn.commit()

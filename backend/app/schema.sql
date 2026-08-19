@@ -119,3 +119,89 @@ CREATE TABLE IF NOT EXISTS fx_snapshots (
   source     TEXT NOT NULL,   -- er-api | frankfurter | cached
   stale      INTEGER NOT NULL DEFAULT 0
 );
+
+-- CFDI / SAT catalog tables (ticket 04)
+
+CREATE TABLE IF NOT EXISTS sat_product_codes (
+  clave           TEXT PRIMARY KEY,
+  description     TEXT NOT NULL,
+  category        TEXT NOT NULL DEFAULT 'general',
+  vigencia_inicio TEXT NOT NULL,
+  vigencia_fin    TEXT,            -- NULL = still active
+  created_at      TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS sat_unit_codes (
+  clave           TEXT PRIMARY KEY,
+  description     TEXT NOT NULL,
+  vigencia_inicio TEXT NOT NULL,
+  vigencia_fin    TEXT,
+  created_at      TEXT NOT NULL
+);
+
+-- CFDI invoice tables (tickets 05, 06, 07)
+
+CREATE TABLE IF NOT EXISTS cfdi_invoices (
+  id                TEXT PRIMARY KEY,
+  owner_user_id     TEXT NOT NULL REFERENCES users(sub),
+  source_id         TEXT NOT NULL REFERENCES income_sources(id),
+  foreign_client_id TEXT NOT NULL REFERENCES foreign_clients(id),
+  month             TEXT NOT NULL,              -- 'YYYY-MM'
+  status            TEXT NOT NULL DEFAULT 'draft',  -- draft | stamped | cancelled
+  currency_option   TEXT NOT NULL DEFAULT 'USD',    -- USD | MXN
+  tipo_comprobante  TEXT NOT NULL DEFAULT 'I',      -- I=ingreso
+  metodo_pago       TEXT NOT NULL DEFAULT 'PPD',    -- PUE | PPD
+  forma_pago        TEXT NOT NULL DEFAULT '99',     -- 99=Por definir (PPD)
+  uso_cfdi          TEXT NOT NULL DEFAULT 'S01',
+  serie             TEXT,
+  folio             TEXT,
+  fecha_emision     TEXT NOT NULL,              -- ISO datetime
+  lugar_expedicion  TEXT NOT NULL,              -- 5-digit postal code
+  tipo_cambio       REAL,                       -- NULL when Moneda=MXN
+  subtotal          REAL NOT NULL DEFAULT 0,
+  total             REAL NOT NULL DEFAULT 0,
+  iva_rate          REAL NOT NULL DEFAULT 0,    -- 0 for export services
+  iva_amount        REAL NOT NULL DEFAULT 0,
+  moneda            TEXT NOT NULL DEFAULT 'USD',
+  no_certificado    TEXT,                       -- 20-digit CSD serial
+  certificado       TEXT,                       -- base64 CSD .cer
+  sello             TEXT,                       -- base64 digital seal
+  uuid              TEXT,                       -- PAC-assigned UUID (timbre fiscal)
+  pac_response      TEXT,                       -- JSON PAC response
+  sat_xml           TEXT,                       -- stamped XML from PAC
+  created_at        TEXT NOT NULL,
+  updated_at        TEXT NOT NULL,
+  UNIQUE (owner_user_id, source_id, month)
+);
+
+CREATE TABLE IF NOT EXISTS cfdi_concepts (
+  id              TEXT PRIMARY KEY,
+  invoice_id      TEXT NOT NULL REFERENCES cfdi_invoices(id),
+  clave_prod_serv TEXT NOT NULL,           -- SAT ClaveProdServ
+  clave_unidad    TEXT NOT NULL,           -- SAT ClaveUnidad
+  descripcion     TEXT NOT NULL,
+  cantidad        REAL NOT NULL DEFAULT 1,
+  valor_unitario  REAL NOT NULL,
+  importe         REAL NOT NULL,
+  objeto_imp      TEXT NOT NULL DEFAULT '01',  -- 01=no objeto, 02=isObjecto
+  no_identificacion TEXT,
+  created_at      TEXT NOT NULL
+);
+
+-- CFDI invoice monthly tax summaries (ticket 08)
+
+CREATE TABLE IF NOT EXISTS monthly_tax_summaries (
+  id              TEXT PRIMARY KEY,
+  owner_user_id   TEXT NOT NULL REFERENCES users(sub),
+  month           TEXT NOT NULL,           -- 'YYYY-MM'
+  regime_code     TEXT NOT NULL,           -- RESICO | LEGACY_2PCT
+  total_gross_mxn REAL NOT NULL,
+  bracket_rate    REAL,                    -- NULL for LEGACY_2PCT
+  isr_due         REAL NOT NULL,
+  cfdi_count      INTEGER NOT NULL DEFAULT 0,
+  breakdown_json  TEXT NOT NULL DEFAULT '[]',  -- JSON array
+  status          TEXT NOT NULL DEFAULT 'draft',  -- draft | filed
+  generated_at    TEXT NOT NULL,
+  filed_at        TEXT,
+  UNIQUE (owner_user_id, month)
+);

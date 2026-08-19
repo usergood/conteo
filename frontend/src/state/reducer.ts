@@ -11,6 +11,7 @@ export const initialState: AppState = {
   months: [],
   sharedMonths: [],
   fx: null,
+  foreignClients: [],
   screen: 'login',
   selectedSourceId: null,
   monthTab: 'mine',
@@ -51,7 +52,7 @@ export function reducer(state: AppState = initialState, action: Action): AppStat
     case 'LOGOUT':
       return { ...initialState, screen: 'login' };
     case 'HYDRATE': {
-      const { user, bank, sources, projects, settlements, sharesByMe, sharesWithMe, months, sharedMonths, fx } =
+      const { user, bank, sources, projects, settlements, sharesByMe, sharesWithMe, months, sharedMonths, fx, foreignClients } =
         action.payload;
       const screen =
         bank === null
@@ -73,6 +74,7 @@ export function reducer(state: AppState = initialState, action: Action): AppStat
         months,
         sharedMonths,
         fx,
+        foreignClients: foreignClients ?? [],
         screen,
       };
     }

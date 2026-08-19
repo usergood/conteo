@@ -7,9 +7,12 @@ export type Screen =
   | 'close'
   | 'forecast'
   | 'months'
-  | 'share';
+  | 'share'
+  | 'cfdi'
+  | 'tax';
 
 export type GuideStatus = 'pending' | 'skipped' | 'done';
+export type TaxRegimeType = 'RESICO' | 'LEGACY_2PCT';
 
 export interface User {
   sub: string;
@@ -18,6 +21,8 @@ export interface User {
   avatarUrl: string | null;
   language: Language;
   guideStatus: GuideStatus;
+  taxRegime?: TaxRegimeType;
+  issuerRfc?: string | null;
 }
 
 export interface BankSettings {
@@ -35,6 +40,7 @@ export interface IncomeSource {
   commissionMode: 'none' | 'pct' | 'flat';
   commissionValue: number;
   active: boolean;
+  foreignClientId?: string | null;
 }
 
 export interface Project {
@@ -131,6 +137,7 @@ export interface HydratePayload {
   months: MonthSummary[];
   sharedMonths: SharedMonthSummary[];
   fx: FxSnapshot | null;
+  foreignClients?: ForeignClient[];
 }
 
 export type Action =
@@ -163,6 +170,7 @@ export interface AppState {
   months: MonthSummary[];
   sharedMonths: SharedMonthSummary[];
   fx: FxSnapshot | null;
+  foreignClients?: ForeignClient[];
   screen: Screen;
   selectedSourceId: string | null;
   monthTab: 'mine' | 'shared';
@@ -249,4 +257,95 @@ export interface CloseView {
   month: string;
   sources: CloseSourceForm[];
   settlements: Settlement[];
+}
+
+/* -------------------------------- CFDI / SAT -------------------------------- */
+
+export interface ForeignClient {
+  id: string;
+  legalName: string;
+  taxId: string;
+  rfc: string;
+  fiscalRegime: string;
+  usoCfdi: string;
+  country: string;
+  currencyOption: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type CFDIStatus = 'draft' | 'stamped' | 'cancelled';
+export type MetodoPago = 'PUE' | 'PPD';
+
+export interface CFDIInvoice {
+  id: string;
+  sourceId: string;
+  foreignClientId: string;
+  month: string;
+  status: CFDIStatus;
+  currencyOption: string;
+  metodoPago: MetodoPago;
+  formaPago: string;
+  usoCfdi: string;
+  serie: string | null;
+  folio: string | null;
+  fechaEmision: string;
+  subtotal: number;
+  total: number;
+  moneda: string;
+  tipoCambio: number | null;
+  uuid: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CFDIConcept {
+  id: string;
+  invoiceId: string;
+  claveProdServ: string;
+  claveUnidad: string;
+  descripcion: string;
+  cantidad: number;
+  valorUnitario: number;
+  importe: number;
+  objetoImp: string;
+  noIdentificacion: string | null;
+}
+
+export interface SatProductCode {
+  clave: string;
+  description: string;
+  category: string;
+  vigenciaInicio: string;
+  vigenciaFin: string | null;
+}
+
+export interface SatUnitCode {
+  clave: string;
+  description: string;
+  vigenciaInicio: string;
+  vigenciaFin: string | null;
+}
+
+export interface TaxSummaryBreakdownItem {
+  invoiceId: string;
+  sourceName: string;
+  grossMxn: number;
+  tipoCambio: number | null;
+}
+
+export type TaxSummaryStatus = 'draft' | 'filed';
+
+export interface TaxSummary {
+  id: string;
+  month: string;
+  regimeCode: string;
+  totalGrossMxn: number;
+  bracketRate: number | null;
+  isrDue: number;
+  cfdiCount: number;
+  breakdown: TaxSummaryBreakdownItem[];
+  status: TaxSummaryStatus;
+  generatedAt: string;
+  filedAt: string | null;
 }

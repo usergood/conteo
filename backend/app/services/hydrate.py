@@ -140,7 +140,11 @@ def hydrate_payload(conn: sqlite3.Connection, user_id: str) -> dict:
     settlements = conn.execute(
         "SELECT * FROM settlements WHERE owner_user_id = ? ORDER BY month, created_at", (user_id,)
     ).fetchall()
+    foreign_clients = conn.execute(
+        "SELECT * FROM foreign_clients WHERE owner_user_id = ? ORDER BY created_at", (user_id,)
+    ).fetchall()
     snapshot = fx.current_snapshot(conn)
+    from ..serializers import fc_dict
     return {
         "user": user_dict(_user_row(conn, user_id)),
         "bank": bank_dict(bank) if bank else None,
@@ -157,4 +161,5 @@ def hydrate_payload(conn: sqlite3.Connection, user_id: str) -> dict:
             "fetchedAt": snapshot["fetched_at"] if snapshot else None,
             "stale": bool(snapshot["stale"]) if snapshot else True,
         } if snapshot else None,
+        "foreignClients": [fc_dict(r) for r in foreign_clients],
     }

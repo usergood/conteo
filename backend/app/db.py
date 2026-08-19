@@ -23,6 +23,8 @@ def init_db(conn: sqlite3.Connection) -> None:
     conn.commit()
     migrate_guide_status(conn)
     migrate_tax_regime(conn)
+    migrate_issuer_rfc(conn)
+    _seed_sat_catalogs(conn)
 
 
 def migrate_guide_status(conn: sqlite3.Connection) -> None:
@@ -69,3 +71,21 @@ def migrate_tax_regime(conn: sqlite3.Connection) -> None:
 def default_db_path() -> str:
     settings = get_settings()
     return str(Path(settings.data_dir) / "conteo.db")
+
+
+def _seed_sat_catalogs(conn: sqlite3.Connection) -> None:
+    """Seed SAT catalog tables if empty (ticket 04). Idempotent."""
+    from .services.sat_catalogs import seed_catalogs
+    row = conn.execute("SELECT COUNT(*) AS n FROM sat_product_codes").fetchone()
+    if row["n"] == 0:
+        seed_catalogs(conn)
+
+
+def migrate_issuer_rfc(conn: sqlite3.Connection) -> None:
+    """Guarded, idempotent migration: add users.issuer_rfc if missing.
+    The issuer RFC is the user's SAT-registered RFC for signing CFDIs."""
+    cols = [row["name"] for row in conn.execute("PRAGMA table_info(users)").fetchall()]
+    if "issuer_rfc" in cols:
+        return
+    conn.execute("ALTER TABLE users ADD COLUMN issuer_rfc TEXT")
+    conn.commit()

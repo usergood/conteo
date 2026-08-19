@@ -47,7 +47,7 @@ The monthly PDF (WeasyPrint HTML/CSS) available once every active source for a m
 _Avoid_: Pay stub, invoice, comprobante
 
 **TAX**:
-The 2% of bank-net MXN withheld per settlement (setting, global per-user). Slip contents are "TAX-friendly" (the user's term); the formal fiscal document is a CFDI produced outside the app.
+The default fixed-rate tax handling, now the **LEGACY_2PCT** tax regime: 2% (a per-user setting) of bank-net MXN withheld per settlement. Slip contents are "TAX-friendly" (the user's term); the formal fiscal document is a CFDI produced outside the app.
 _Avoid_: SAT, fiscal document
 
 **Forecast**:
@@ -74,7 +74,8 @@ SAT-authorized third party that validates, signs, and stamps CFDIs. The app gene
 The app builds the unsigned-but-issuer-signed CFDI XML itself (PAC-agnostic) using hand-rolled **Pydantic models** mirroring CFDI 4.0, serialized with `lxml`; `satcfdi` is kept only as a test *reference oracle*, not a runtime dependency. CI gates on XSD validation (`cfdv40.xsd` plus mirrored `catCFDI.xsd` + `tdCFDI.xsd`). Only the base `ingreso` CFDI is generated — complementos like Nómina/Pagos/Carta Porte are out of scope, and the PAC appends the `tfd` TimbreFiscalDigital at stamping. Namespaces use the `cfdi:` prefix with the required `xsi:schemaLocation`; `Sello`/`Certificado`/`NoCertificado` come from the issuer CSD at signing time (a separate, PAC-agnostic step via cadena-original XSLT + RSA-SHA256). Golden XML fixtures guard regression.
 
 **Tax Regime** (*Régimen Fiscal*):
-The issuer's tax classification determining rates and obligations. **RESICO** (*Régimen Simplificado de Confianza*) is the initial regime (1.0–2.5% ISR on gross revenue). The domain model supports multiple regimes via a strategy pattern — not hardcoded.
+The issuer's tax classification determining rates and obligations. **RESICO** (*Régimen Simplificado de Confianza*) is the initial regime (1.0–2.5% ISR on gross revenue, bracket-based); **LEGACY_2PCT** is the app's default fixed-rate handling (2% of bank-net MXN). Multiple regimes are supported via a **strategy pattern** — not hardcoded. Each user has exactly one active tax regime, chosen when configuring their bank: `LEGACY_2PCT` is the default, `RESICO` is opted into; there is no feature flag. Regime codes are app-level (`RESICO`, `LEGACY_2PCT`); the SAT's own `RegimenFiscal` claves (e.g. `621` for RESICO) are a separate concern resolved at CFDI generation.
+_Avoid_: 2% TAX as the only tax model
 
 **Foreign Client** (*ForeignClient*, *Receptor Extranjero*):
 A non-Mexican client invoiced via CFDI. Uses generic RFC `XEXX010101000`, fiscal regime `616` (*Sin obligaciones fiscales*), CFDI usage `S01` (*Sin efectos fiscales*), and `0% IVA` under export of services (Art. 29 LIVA). Maps one-to-one to an IncomeSource flagged `is_foreign`; `legal_name` and `tax_id` (EIN) are user-editable while `rfc`, `fiscal_regime`, `uso_cfdi`, and `country` are locked to the foreign-client generics. Carries a `currency_option` default that individual invoices may override.
@@ -106,7 +107,10 @@ The official SAT code lists a CFDI line item draws from: `ClaveProdServ`, `Clave
 The issuer's SAT-issued digital certificate (`.cer`) and private key (`.key` + passphrase) used to sign CFDIs before PAC submission.
 
 **Monthly Tax Workflow**:
-Per-calendar-month cycle: ingest payments → generate CFDIs → calculate RESICO ISR by gross MXN brackets → generate pre-filled SAT declaration payload for portal filing → audit trail.
+Per-calendar-month cycle: ingest payments → generate CFDIs → calculate ISR by the active tax regime (RESICO by gross MXN brackets, LEGACY_2PCT by fixed rate) → generate pre-filled SAT declaration payload for portal filing → audit trail.
+
+**Monthly Tax Summary**:
+The stored record of one month's tax computation per user: period, total gross MXN, applicable bracket and rate, ISR due, CFDI count, per-CFDI breakdown, and the **tax regime** that computed it (audit trail). Recomputable while the month's CFDIs can still change; once the month is closed or filed, it is history — past months are never recomputed under a new regime.
 
 **RESICO ISR Brackets** (monthly gross MXN):
 - ≤ 25,000: 1.00%

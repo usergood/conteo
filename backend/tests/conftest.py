@@ -25,6 +25,17 @@ def client(app):
         yield c
 
 
+@pytest.fixture
+def db_conn(app):
+    """An initialized SQLite connection with schema applied (no lifespan needed)."""
+    from app.db import init_db, connect
+
+    conn = connect(app.state.db_path)
+    init_db(conn)
+    yield conn
+    conn.close()
+
+
 def _conn(app):
     return sqlite3.connect(app.state.db_path)
 

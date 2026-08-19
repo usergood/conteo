@@ -9,3 +9,4 @@ PyJWT
 cryptography
 email-validator
 weasyprint
+lxml

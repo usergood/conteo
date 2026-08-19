@@ -12,7 +12,6 @@ from pathlib import Path
 import base64
 
 from jinja2 import Environment, FileSystemLoader
-from weasyprint import HTML
 
 TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "templates"
 
@@ -58,6 +57,8 @@ def build_slip_data(month: str, user: dict, bank: dict, sections: list[dict], ge
 
 
 def render_pdf(slip_data: dict) -> bytes:
+    from weasyprint import HTML
+
     env = Environment(loader=FileSystemLoader(str(TEMPLATE_DIR)))
     template = env.get_template("slip.html")
     html = template.render(data=slip_data, fmt_mxn=_fmt_mxn, fmt_foreign=_fmt_foreign)

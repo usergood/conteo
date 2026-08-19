@@ -16,6 +16,8 @@ import { CloseScreen } from '@/components/screens/Close';
 import { ForecastScreen } from '@/components/screens/Forecast';
 import { MonthsScreen } from '@/components/screens/Months';
 import { ShareScreen } from '@/components/screens/Share';
+import { CfdiScreen } from '@/components/screens/Cfdi';
+import { TaxScreen } from '@/components/screens/Tax';
 
 interface AppContextValue {
   state: AppState;
@@ -40,6 +42,8 @@ const NAV: { screen: Screen; icon: string }[] = [
   { screen: 'sources', icon: '🏢' },
   { screen: 'close', icon: '💰' },
   { screen: 'months', icon: '🗓️' },
+  { screen: 'cfdi', icon: '📄' },
+  { screen: 'tax', icon: '🧾' },
   { screen: 'share', icon: '🔗' },
   { screen: 'settings', icon: '⚙️' },
 ];
@@ -191,6 +195,8 @@ export function App() {
             {screen === 'forecast' && <ForecastScreen />}
             {screen === 'months' && <MonthsScreen />}
             {screen === 'share' && <ShareScreen />}
+            {screen === 'cfdi' && <CfdiScreen />}
+            {screen === 'tax' && <TaxScreen />}
           </main>
         </div>
 

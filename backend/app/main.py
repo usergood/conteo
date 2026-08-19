@@ -9,7 +9,7 @@ from fastapi import FastAPI
 
 from .config import get_settings
 from .db import connect, init_db
-from .routers import auth, close, forecast, months, settings as settings_router, shares, slips, sources
+from .routers import auth, cfdi, close, forecast, foreign_clients, months, sat, settings as settings_router, shares, slips, sources, tax
 from .services import fx
 
 log = logging.getLogger(__name__)
@@ -51,11 +51,15 @@ def create_app(db_path: str | None = None, fx_poll: bool = True) -> FastAPI:
     app.include_router(auth.router)
     app.include_router(settings_router.router)
     app.include_router(sources.router)
+    app.include_router(foreign_clients.router)
     app.include_router(close.router)
     app.include_router(forecast.router)
     app.include_router(months.router)
     app.include_router(shares.router)
     app.include_router(slips.router)
+    app.include_router(cfdi.router)
+    app.include_router(sat.router)
+    app.include_router(tax.router)
 
     @app.get("/api/health")
     def health():
